@@ -86,8 +86,18 @@ function WebcamCapture() {
           // Clear previous frame
           ctx.clearRect(0, 0, canvas.width, canvas.height);
           
+          // Save the current context state
+          ctx.save();
+          
+          // Mirror the context for the video
+          ctx.scale(-1, 1);
+          ctx.translate(-canvas.width, 0);
+          
           // Draw video frame
           ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+          
+          // Restore the context to normal for annotations
+          ctx.restore();
 
           // Get hand landmarks
           const hands = await model.estimateHands(video);
@@ -96,13 +106,33 @@ function WebcamCapture() {
             const hand = hands[0];
             setHandData(hand);
             
+            // Mirror the hand coordinates
+            const mirroredHand = {
+              ...hand,
+              landmarks: hand.landmarks.map(point => [
+                canvas.width - point[0],
+                point[1],
+                point[2]
+              ]),
+              annotations: Object.fromEntries(
+                Object.entries(hand.annotations).map(([key, points]) => [
+                  key,
+                  points.map(point => [
+                    canvas.width - point[0],
+                    point[1],
+                    point[2]
+                  ])
+                ])
+              )
+            };
+            
             // Draw connecting lines
             ctx.strokeStyle = '#4F4099';
             ctx.lineWidth = 2;
 
             // Draw palm
-            const palm = hand.annotations.palmBase[0];
-            hand.annotations.thumb.forEach((point, i) => {
+            const palm = mirroredHand.annotations.palmBase[0];
+            mirroredHand.annotations.thumb.forEach((point, i) => {
               if (i === 0) {
                 ctx.beginPath();
                 ctx.moveTo(palm[0], palm[1]);
@@ -113,7 +143,7 @@ function WebcamCapture() {
 
             // Draw fingers
             ['thumb', 'indexFinger', 'middleFinger', 'ringFinger', 'pinky'].forEach(finger => {
-              const points = hand.annotations[finger];
+              const points = mirroredHand.annotations[finger];
               ctx.beginPath();
               ctx.moveTo(points[0][0], points[0][1]);
               points.forEach((point) => {
@@ -123,7 +153,7 @@ function WebcamCapture() {
             });
 
             // Draw landmarks
-            hand.landmarks.forEach((point, index) => {
+            mirroredHand.landmarks.forEach((point, index) => {
               ctx.beginPath();
               ctx.arc(point[0], point[1], 5, 0, 2 * Math.PI);
               ctx.fillStyle = '#4F4099';
@@ -136,8 +166,8 @@ function WebcamCapture() {
             });
 
             // Calculate and display wrist angle
-            const wrist = hand.annotations.palmBase[0];
-            const middleFinger = hand.annotations.middleFinger[0];
+            const wrist = mirroredHand.annotations.palmBase[0];
+            const middleFinger = mirroredHand.annotations.middleFinger[0];
             const angle = Math.atan2(
               middleFinger[1] - wrist[1],
               middleFinger[0] - wrist[0]
@@ -181,7 +211,7 @@ function WebcamCapture() {
       />
       <canvas
         ref={canvasRef}
-        className="rounded-lg shadow-lg transform scale-x-[-1]"
+        className="rounded-lg shadow-lg"
         width="640"
         height="480"
       />
