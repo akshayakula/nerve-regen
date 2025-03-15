@@ -26,7 +26,7 @@ function App() {
               <p className="text-lg text-gray-300 mb-8">
                 Track and analyze hand movements with precision
               </p>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <Button 
                   onClick={() => setShowForm(true)}
                   className="bg-[#4F4099] hover:bg-[#3d3277] text-white px-8 py-3 rounded-lg text-lg w-full sm:w-auto"
