@@ -82,22 +82,26 @@ function WizardForm({ onSubmit }) {
             value={formData[step.id]}
             onChange={(e) => handleInputChange(e.target.value)}
             placeholder={step.placeholder}
-            className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full p-4 bg-[#1a1a1a] border border-[#4F4099] rounded-lg text-white 
+                     focus:outline-none focus:ring-2 focus:ring-[#4F4099] focus:border-transparent
+                     transition-all duration-200"
           />
         );
       case 'radio':
         return (
-          <div className="space-y-2">
+          <div className="space-y-3">
             {step.options.map((option) => (
-              <label key={option} className="flex items-center space-x-2">
+              <label key={option} className="flex items-center space-x-3 p-4 bg-[#1a1a1a] 
+                                         border border-[#4F4099] rounded-lg cursor-pointer
+                                         hover:bg-[#2a2a2a] transition-all duration-200">
                 <input
                   type="radio"
                   value={option}
                   checked={formData[step.id] === option}
                   onChange={(e) => handleInputChange(e.target.value)}
-                  className="text-primary focus:ring-primary"
+                  className="text-[#4F4099] focus:ring-[#4F4099] h-5 w-5"
                 />
-                <span>{option}</span>
+                <span className="text-white">{option}</span>
               </label>
             ))}
           </div>
@@ -108,7 +112,9 @@ function WizardForm({ onSubmit }) {
             type="date"
             value={formData[step.id]}
             onChange={(e) => handleInputChange(e.target.value)}
-            className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            className="w-full p-4 bg-[#1a1a1a] border border-[#4F4099] rounded-lg text-white 
+                     focus:outline-none focus:ring-2 focus:ring-[#4F4099] focus:border-transparent
+                     transition-all duration-200"
           />
         );
       default:
@@ -117,42 +123,59 @@ function WizardForm({ onSubmit }) {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+    <div className="bg-[#2a2a2a] rounded-xl p-8 shadow-xl">
       {/* Progress bar */}
-      <div className="mb-6">
-        <div className="h-2 bg-gray-200 rounded-full">
+      <div className="mb-8">
+        <div className="h-2 bg-[#3d3277] rounded-full">
           <div
-            className="h-2 bg-primary rounded-full transition-all duration-300"
+            className="h-2 bg-[#4F4099] rounded-full transition-all duration-300"
             style={{ width: `${((currentStep + 1) / FORM_STEPS.length) * 100}%` }}
           />
         </div>
-        <div className="mt-2 text-sm text-gray-600">
+        <div className="mt-2 text-sm text-gray-400 font-inter">
           Step {currentStep + 1} of {FORM_STEPS.length}
         </div>
       </div>
 
       {/* Form content */}
-      <div className="mb-6">
-        <h2 className="text-xl font-semibold mb-4">{FORM_STEPS[currentStep].title}</h2>
-        {renderFormField()}
-        {errors[FORM_STEPS[currentStep].id] && (
-          <p className="mt-2 text-sm text-destructive">{errors[FORM_STEPS[currentStep].id]}</p>
-        )}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold font-poppins mb-6 text-white">
+          {FORM_STEPS[currentStep].title}
+        </h2>
+        <div className="space-y-4">
+          {renderFormField()}
+          {errors[FORM_STEPS[currentStep].id] && (
+            <p className="text-red-400 text-sm mt-2">
+              {errors[FORM_STEPS[currentStep].id]}
+            </p>
+          )}
+        </div>
       </div>
 
       {/* Navigation buttons */}
-      <div className="flex justify-between">
+      <div className="flex justify-between gap-4">
         <Button
           variant="outline"
           onClick={handleBack}
           disabled={currentStep === 0}
+          className="flex-1 border-[#4F4099] text-[#4F4099] hover:bg-[#4F4099] hover:text-white disabled:opacity-50"
         >
           Back
         </Button>
         {currentStep === FORM_STEPS.length - 1 ? (
-          <Button onClick={handleSubmit}>Submit</Button>
+          <Button 
+            onClick={handleSubmit}
+            className="flex-1 bg-[#4F4099] hover:bg-[#3d3277]"
+          >
+            Submit
+          </Button>
         ) : (
-          <Button onClick={handleNext}>Next</Button>
+          <Button 
+            onClick={handleNext}
+            className="flex-1 bg-[#4F4099] hover:bg-[#3d3277]"
+          >
+            Next
+          </Button>
         )}
       </div>
     </div>
