@@ -108,6 +108,7 @@ The backend requires MongoDB to be running. Here's how to get started:
    - Follow the installation instructions for your operating system
 
 2. Start MongoDB:
+
    ```bash
    # The MongoDB service should start automatically after installation
    # To verify MongoDB is running:
