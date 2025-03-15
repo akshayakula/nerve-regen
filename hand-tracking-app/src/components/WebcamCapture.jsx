@@ -181,7 +181,7 @@ function WebcamCapture() {
       />
       <canvas
         ref={canvasRef}
-        className="rounded-lg shadow-lg"
+        className="rounded-lg shadow-lg transform scale-x-[-1]"
         width="640"
         height="480"
       />
