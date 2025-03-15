@@ -26,16 +26,16 @@ function App() {
               <p className="text-lg text-gray-300 mb-8">
                 Track and analyze hand movements with precision
               </p>
-              <div className="space-y-6">
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <Button 
                   onClick={() => setShowForm(true)}
-                  className="bg-[#4F4099] hover:bg-[#3d3277] text-white px-8 py-3 rounded-lg text-lg w-full sm:w-auto"
+                  className="bg-[#4F4099] hover:bg-[#3d3277] text-white px-8 py-3 rounded-lg text-lg flex-1 sm:flex-initial"
                 >
                   Get Started
                 </Button>
                 <Button 
                   variant="outline"
-                  className="border-[#4F4099] text-[#4F4099] hover:bg-[#4F4099] hover:text-white px-8 py-3 rounded-lg text-lg w-full sm:w-auto"
+                  className="border-[#4F4099] text-[#4F4099] hover:bg-[#4F4099] hover:text-white px-8 py-3 rounded-lg text-lg flex-1 sm:flex-initial"
                 >
                   Learn More
                 </Button>
