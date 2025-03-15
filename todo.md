@@ -2,13 +2,13 @@
 
 ## Project Setup
 
-- [ ] **Create React App**:
+- [x] **Create React App**:
   - Run `npx create-react-app hand-tracking-app` and navigate to the project folder.
 
-- [ ] **Install Dependencies**:
+- [x] **Install Dependencies**:
   - Run `npm install @shadcn/ui tailwindcss` to install ShadCN and Tailwind CSS.
 
-- [ ] **Set Up Tailwind CSS**:
+- [x] **Set Up Tailwind CSS**:
   - Initialize Tailwind by running `npx tailwindcss init`.
   - Update `tailwind.config.js` and `src/index.css` to include Tailwind's directives.
 
@@ -16,45 +16,45 @@
 
 ### Step 1: Set Up React App with ShadCN
 
-- [ ] **Set up ShadCN**:
+- [x] **Set up ShadCN**:
   - Install `@shadcn/ui` and ensure the button renders correctly in `App.js`.
 
-- [ ] **Test Tailwind CSS Integration**:
+- [x] **Test Tailwind CSS Integration**:
   - Ensure that basic Tailwind styling works by testing with a button or simple style.
 
 ### Step 2: Implement Wizard Form
 
-- [ ] **Create `WizardForm.js`**:
+- [x] **Create `WizardForm.js`**:
   - Implement form with **multiple-choice questions**:
     - Ask for **name**.
     - Ask for **hand dominance** (left/right).
     - Ask if the user is **currently taking treatment for Parkinson's**.
     - Ask when the **symptoms began**.
   
-- [ ] **Use `useState` for Form Data**:
+- [x] **Use `useState` for Form Data**:
   - Manage form data for each step in the wizard.
 
-- [ ] **Create Next/Submit Actions**:
+- [x] **Create Next/Submit Actions**:
   - Implement buttons for **Next** and **Submit** actions.
 
-- [ ] **Add Progress Bar**:
+- [x] **Add Progress Bar**:
   - Add a progress bar to indicate the user's current step in the form.
 
-- [ ] **Form Validation**:
+- [x] **Form Validation**:
   - Ensure that all required fields are filled before submission.
 
 ### Step 3: Set Up Webcam Capture
 
-- [ ] **Install TensorFlow.js and Handpose Model**:
+- [x] **Install TensorFlow.js and Handpose Model**:
   - Run `npm install @tensorflow/tfjs @tensorflow-models/handpose`.
 
-- [ ] **Create `WebcamCapture.js`**:
+- [x] **Create `WebcamCapture.js`**:
   - Capture webcam feed using `navigator.mediaDevices.getUserMedia`.
 
-- [ ] **Load Handpose Model**:
+- [x] **Load Handpose Model**:
   - Load and initialize **Handpose** model to process webcam frames.
 
-- [ ] **Process Hand Data**:
+- [x] **Process Hand Data**:
   - Implement `model.estimateHands()` to track the hand and wrist positions.
   - Log or display the **hand position** and **wrist angles** for processing.
 

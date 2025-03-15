@@ -31,7 +31,7 @@ const FORM_STEPS = [
   },
 ];
 
-function WizardForm() {
+function WizardForm({ onSubmit }) {
   const [currentStep, setCurrentStep] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
@@ -67,7 +67,7 @@ function WizardForm() {
   const handleSubmit = () => {
     if (validateStep(currentStep)) {
       console.log('Form submitted:', formData);
-      // TODO: Send data to backend
+      onSubmit(formData);
     }
   };
 

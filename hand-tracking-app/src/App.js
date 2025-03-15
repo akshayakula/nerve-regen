@@ -1,9 +1,16 @@
 import React, { useState } from 'react';
 import { Button } from './components/ui/button';
 import WizardForm from './components/WizardForm';
+import WebcamCapture from './components/WebcamCapture';
 
 function App() {
   const [showForm, setShowForm] = useState(false);
+  const [formSubmitted, setFormSubmitted] = useState(false);
+
+  const handleFormSubmit = (formData) => {
+    console.log('Form data:', formData);
+    setFormSubmitted(true);
+  };
 
   return (
     <div className="min-h-screen bg-background p-8">
@@ -16,8 +23,13 @@ function App() {
               <Button variant="outline">Learn More</Button>
             </div>
           </>
+        ) : formSubmitted ? (
+          <div className="space-y-8">
+            <h2 className="text-2xl font-semibold">Hand Tracking</h2>
+            <WebcamCapture />
+          </div>
         ) : (
-          <WizardForm />
+          <WizardForm onSubmit={handleFormSubmit} />
         )}
       </div>
     </div>
