@@ -60,22 +60,22 @@
 
 ### Step 4: Set Up Back-End (Node.js, Arduino Communication)
 
-- [ ] **Create Node.js Server**:
+- [x] **Create Node.js Server**:
   - Set up a basic **express server** that handles incoming data from the front-end.
 
-- [ ] **Arduino Communication**:
+- [x] **Arduino Communication**:
   - Use the `serialport` library to communicate with the Arduino.
   - Set up Arduino to send sensor data (e.g., EMG data) via **Serial Communication**.
 
-- [ ] **Handle Data from Front-End**:
+- [x] **Handle Data from Front-End**:
   - Process **hand tracking data** sent from the front-end (e.g., positions, joint angles).
 
 ### Step 5: Set Up Database (MongoDB)
 
-- [ ] **Install Mongoose**:
+- [x] **Install Mongoose**:
   - Run `npm install mongoose` to integrate MongoDB with Node.js.
 
-- [ ] **Create MongoDB Schema**:
+- [x] **Create MongoDB Schema**:
   - Set up collections for:
     - **User Data** (name, hand dominance, symptoms, etc.)
     - **Hand Tracking Data** (positions, wrist angles, etc.)
