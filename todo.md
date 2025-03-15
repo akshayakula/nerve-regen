@@ -81,41 +81,22 @@
     - **Hand Tracking Data** (positions, wrist angles, etc.)
     - **Sensor Data** (EMG data from Arduino).
 
-- [ ] **Save Incoming Data**:
+- [x] **Save Incoming Data**:
   - Implement data saving functionality to store user and hand tracking data in MongoDB.
 
 ### Step 6: Error Handling and Testing
 
-- [ ] **Front-End Error Handling**:
+- [x] **Front-End Error Handling**:
   - Handle form input validation errors.
   - Handle webcam and Handpose model errors.
 
-- [ ] **Back-End Error Handling**:
+- [x] **Back-End Error Handling**:
   - Handle Arduino communication errors (e.g., device disconnections).
   - Handle database errors and retries.
+
 ---
 
 ## Final Steps
 
 - [ ] **Optimize Front-End Performance**:
   - Test and optimize **TensorFlow.js** for smooth performance on mobile devices and desktops.
-
-- [ ] **Deploy App**:
-  - Prepare the app for deployment on a hosting platform (e.g., Heroku, AWS).
-
-- [ ] **Monitor and Fix Bugs**:
-  - Monitor the deployed app for performance issues and bugs.
-  - Apply necessary fixes based on user feedback or errors.
-
----
-
-## Post-Launch
-
-- [ ] **User Feedback**:
-  - Collect feedback from users on the experience and any performance issues.
-  
-- [ ] **Enhance Features**:
-  - Add additional features such as **multiple user support** or **real-time interaction with more devices**.
-
-- [ ] **Maintain System**:
-  - Regularly maintain and update the app based on user needs and new technologies.
