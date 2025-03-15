@@ -2,6 +2,8 @@ const express = require('express');
 const cors = require('cors');
 const { SerialPort } = require('serialport');
 const mongoose = require('mongoose');
+const errorHandler = require('./middleware/errorHandler');
+const userDataRoutes = require('./routes/userData');
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -54,17 +56,10 @@ try {
 }
 
 // Routes
-app.post('/api/user-data', async (req, res) => {
-  try {
-    const { formData, handData } = req.body;
-    // TODO: Save to MongoDB
-    console.log('Received data:', { formData, handData });
-    res.json({ success: true });
-  } catch (err) {
-    console.error('Error saving data:', err);
-    res.status(500).json({ error: 'Failed to save data' });
-  }
-});
+app.use('/api/user-data', userDataRoutes);
+
+// Error handling
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
