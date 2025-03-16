@@ -212,7 +212,7 @@ function WebcamCapture() {
   }, [model, isVideoReady, socket]);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:5000');
+    const newSocket = io('http://localhost:5001');
     setSocket(newSocket);
 
     newSocket.on('sensorData', (data) => {
@@ -225,7 +225,10 @@ function WebcamCapture() {
         Voltage2: data?.Voltage2 ?? 3.5,
         GyroX: data?.GyroX ?? 0.5,
         GyroY: data?.GyroY ?? -0.3,
-        GyroZ: data?.GyroZ ?? 0.1
+        GyroZ: data?.GyroZ ?? 0.1,
+        Roll: data?.Roll ?? 0,
+        Pitch: data?.Pitch ?? 0,
+        Yaw: data?.Yaw ?? 0
       };
 
       setSessionData(prev => [...prev, {
