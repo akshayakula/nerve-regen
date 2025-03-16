@@ -3,6 +3,7 @@ import io from 'socket.io-client';
 import * as tf from '@tensorflow/tfjs';
 import * as handpose from '@tensorflow-models/handpose';
 import SensorData from './SensorData';
+import Timer from './Timer';
 
 function WebcamCapture() {
   const videoRef = useRef(null);
@@ -12,6 +13,7 @@ function WebcamCapture() {
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [handData, setHandData] = useState(null);
   const [socket, setSocket] = useState(null);
+  const [showWebcam, setShowWebcam] = useState(true);
 
   // Initialize webcam
   useEffect(() => {
@@ -209,27 +211,49 @@ function WebcamCapture() {
     return () => newSocket.disconnect();
   }, []);
 
+  const handleTimerComplete = () => {
+    setShowWebcam(false);
+    // Stop the webcam
+    if (videoRef.current && videoRef.current.srcObject) {
+      videoRef.current.srcObject.getTracks().forEach(track => track.stop());
+    }
+  };
+
   if (error) {
     return <div className="text-destructive">{error}</div>;
   }
 
   return (
-    <div className="relative bg-[#2a2a2a] rounded-xl p-6 shadow-xl">
-      <video
-        ref={videoRef}
-        className="hidden"
-        width="640"
-        height="480"
-        playsInline
-        onLoadedData={handleVideoLoad}
-      />
-      <canvas
-        ref={canvasRef}
-        className="rounded-lg shadow-lg"
-        width="640"
-        height="480"
-      />
-      <SensorData />
+    <div className="relative bg-[#2a2a2a] rounded-xl p-6 shadow-xl transition-all duration-500">
+      {showWebcam ? (
+        <>
+          <video
+            ref={videoRef}
+            className="hidden"
+            width="640"
+            height="480"
+            playsInline
+            onLoadedData={handleVideoLoad}
+          />
+          <canvas
+            ref={canvasRef}
+            className="rounded-lg shadow-lg"
+            width="640"
+            height="480"
+          />
+          <Timer onComplete={handleTimerComplete} />
+          <SensorData />
+        </>
+      ) : (
+        <div className="flex flex-col items-center justify-center p-8 text-center">
+          <h2 className="text-2xl font-bold font-poppins text-white mb-4">
+            Session Complete
+          </h2>
+          <p className="text-gray-300">
+            Thank you for participating. Your data has been recorded.
+          </p>
+        </div>
+      )}
     </div>
   );
 }
