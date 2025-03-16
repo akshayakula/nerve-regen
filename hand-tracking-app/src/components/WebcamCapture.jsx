@@ -4,6 +4,7 @@ import * as tf from '@tensorflow/tfjs';
 import * as handpose from '@tensorflow-models/handpose';
 import SensorData from './SensorData';
 import Timer from './Timer';
+import SessionReport from './SessionReport';
 
 function WebcamCapture() {
   const videoRef = useRef(null);
@@ -14,6 +15,7 @@ function WebcamCapture() {
   const [handData, setHandData] = useState(null);
   const [socket, setSocket] = useState(null);
   const [showWebcam, setShowWebcam] = useState(true);
+  const [sessionData, setSessionData] = useState([]);
 
   // Initialize webcam
   useEffect(() => {
@@ -187,6 +189,15 @@ function WebcamCapture() {
             if (socket) {
               socket.emit('wristAngle', angle);
             }
+
+            // Update the latest session data entry with the wrist angle
+            setSessionData(prev => {
+              const newData = [...prev];
+              if (newData.length > 0) {
+                newData[newData.length - 1].wristAngle = angle;
+              }
+              return newData;
+            });
           }
         }
 
@@ -208,6 +219,20 @@ function WebcamCapture() {
   useEffect(() => {
     const newSocket = io('http://localhost:5000');
     setSocket(newSocket);
+
+    newSocket.on('sensorData', (data) => {
+      const timestamp = new Date().toISOString();
+      setSessionData(prev => [...prev, {
+        timestamp,
+        emg: data.EMG,
+        voltage: data.Voltage,
+        gyroX: data.GyroX,
+        gyroY: data.GyroY,
+        gyroZ: data.GyroZ,
+        wristAngle: null // Will be updated when hand is detected
+      }]);
+    });
+
     return () => newSocket.disconnect();
   }, []);
 
@@ -245,14 +270,7 @@ function WebcamCapture() {
           <SensorData />
         </>
       ) : (
-        <div className="flex flex-col items-center justify-center p-8 text-center">
-          <h2 className="text-2xl font-bold font-poppins text-white mb-4">
-            Session Complete
-          </h2>
-          <p className="text-gray-300">
-            Thank you for participating. Your data has been recorded.
-          </p>
-        </div>
+        <SessionReport sessionData={sessionData} />
       )}
     </div>
   );
