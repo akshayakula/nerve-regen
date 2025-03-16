@@ -11,15 +11,20 @@ const app = express();
 const server = http.createServer(app);
 const io = socketIo(server, {
   cors: {
-    origin: "http://localhost:3000",
-    methods: ["GET", "POST"]
+    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    methods: ["GET", "POST"],
+    credentials: true,
+    allowedHeaders: ["Content-Type"]
   }
 });
 
 const port = process.env.PORT || 5001;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+  credentials: true
+}));
 app.use(express.json());
 
 // Arduino connection setup
@@ -178,6 +183,11 @@ io.on('connection', (socket) => {
     arduinoConnected: arduinoPort !== null 
   });
   
+  // Handle ping from client
+  socket.on('ping', () => {
+    socket.emit('pong', { timestamp: Date.now() });
+  });
+  
   // If no Arduino is connected, send simulated data
   if (!arduinoPort) {
     console.log('No Arduino connected, sending simulated data');
@@ -233,6 +243,16 @@ app.get('/api/arduino-status', (req, res) => {
       path: p.path,
       manufacturer: p.manufacturer || 'Unknown'
     })))
+  });
+});
+
+// Server status route for diagnostics
+app.get('/api/status', (req, res) => {
+  res.json({
+    status: 'ok',
+    timestamp: Date.now(),
+    socketConnections: io.engine.clientsCount,
+    arduinoConnected: arduinoPort !== null
   });
 });
 

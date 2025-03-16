@@ -56,6 +56,35 @@ function WebcamCapture() {
     };
   }, []);
 
+  // Check server connectivity
+  useEffect(() => {
+    // Function to check if the server is reachable
+    const checkServerStatus = async () => {
+      try {
+        const response = await fetch('http://localhost:5001/api/status');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Server status:', data);
+          setError(null);
+        } else {
+          console.error('Server returned error status:', response.status);
+          setError('Server is not responding properly. Status: ' + response.status);
+        }
+      } catch (err) {
+        console.error('Failed to reach server:', err);
+        setError('Cannot connect to server. Please ensure the backend is running.');
+      }
+    };
+    
+    // Check immediately on component mount
+    checkServerStatus();
+    
+    // Then check periodically
+    const statusInterval = setInterval(checkServerStatus, 30000);
+    
+    return () => clearInterval(statusInterval);
+  }, []);
+
   // Handle video loaded
   const handleVideoLoad = () => {
     setIsVideoReady(true);
@@ -220,9 +249,15 @@ function WebcamCapture() {
   }, [model, isVideoReady, socket]);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:5001');
+    // Create socket with explicit configuration
+    const newSocket = io('http://localhost:5001', {
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 20000,
+      transports: ['websocket', 'polling'] // Try WebSocket first, then fall back to polling
+    });
     setSocket(newSocket);
-
+    
     // Connection status handling
     newSocket.on('connect', () => {
       console.log('Connected to server');
@@ -234,7 +269,7 @@ function WebcamCapture() {
     });
     
     newSocket.on('connect_error', (err) => {
-      console.error('Connection error:', err);
+      console.error('Socket connection error:', err.message);
       setError('Failed to connect to server. Is the backend running?');
     });
     
@@ -286,6 +321,16 @@ function WebcamCapture() {
       });
     });
 
+    // Add a ping mechanism to keep the connection alive
+    const pingInterval = setInterval(() => {
+      if (newSocket.connected) {
+        newSocket.emit('ping');
+      } else {
+        console.log('Socket not connected, attempting to reconnect...');
+        newSocket.connect();
+      }
+    }, 10000);
+
     // If no Arduino connection, simulate data every 100ms
     const simulateData = setInterval(() => {
       const timestamp = new Date().toISOString();
@@ -316,6 +361,7 @@ function WebcamCapture() {
     return () => {
       newSocket.disconnect();
       clearInterval(simulateData);
+      clearInterval(pingInterval);
     };
   }, []);
 
@@ -408,6 +454,11 @@ function WebcamCapture() {
 
   return (
     <div className="relative bg-[#2a2a2a] rounded-xl p-6 shadow-xl transition-all duration-500">
+      {error && (
+        <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 text-center z-50">
+          {error}
+        </div>
+      )}
       {showWebcam ? (
         <>
           <video

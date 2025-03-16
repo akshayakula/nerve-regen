@@ -10,18 +10,27 @@ function DataDebugger({ socket, sensorBuffer }) {
   useEffect(() => {
     if (!socket) return;
     
-    const handleConnect = () => setConnectionStatus('Connected');
+    const handleConnect = () => {
+      setConnectionStatus('Connected');
+      // Request server status on connection
+      socket.emit('getStatus');
+    };
     const handleDisconnect = () => setConnectionStatus('Disconnected');
     const handleError = () => setConnectionStatus('Error');
     
     socket.on('connect', handleConnect);
     socket.on('disconnect', handleDisconnect);
     socket.on('connect_error', handleError);
+    socket.on('pong', (data) => {
+      const latency = Date.now() - data.timestamp;
+      console.log(`Socket latency: ${latency}ms`);
+    });
     
     return () => {
       socket.off('connect', handleConnect);
       socket.off('disconnect', handleDisconnect);
       socket.off('connect_error', handleError);
+      socket.off('pong');
     };
   }, [socket]);
   
@@ -76,6 +85,20 @@ function DataDebugger({ socket, sensorBuffer }) {
             {connectionStatus}
           </span>
         </div>
+        
+        {connectionStatus !== 'Connected' && (
+          <button 
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1 px-2 rounded text-xs mt-1"
+            onClick={() => {
+              if (socket) {
+                console.log('Attempting to reconnect...');
+                socket.connect();
+              }
+            }}
+          >
+            Reconnect
+          </button>
+        )}
         
         <div className="flex justify-between">
           <span>Data Rate:</span>
