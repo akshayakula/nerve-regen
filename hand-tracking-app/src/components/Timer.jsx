@@ -1,24 +1,26 @@
 import React, { useState, useEffect } from 'react';
 
-function Timer({ duration = 10, onComplete }) {
-  // Initialize timeLeft with duration
+function Timer({ onComplete }) {
   const [timeLeft, setTimeLeft] = useState(10);
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (timeLeft / duration) * circumference;
 
   useEffect(() => {
-    if (timeLeft <= 0) {
-      onComplete();
-      return;
-    }
-
-    const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
+    const interval = setInterval(() => {
+      setTimeLeft((prevTime) => {
+        if (prevTime <= 1) {
+          clearInterval(interval);
+          onComplete();
+          return 0;
+        }
+        return prevTime - 1;
+      });
     }, 1000);
 
-    return () => clearInterval(timer);
-  }, [timeLeft, onComplete]);
+    return () => clearInterval(interval);
+  }, [onComplete]);
+
+  const strokeDashoffset = circumference * (1 - timeLeft / 10);
 
   return (
     <div className="absolute top-8 right-4 flex items-center justify-center">
@@ -44,7 +46,7 @@ function Timer({ duration = 10, onComplete }) {
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-500 ease-linear"
+            className="transition-all duration-1000 ease-linear"
           />
         </svg>
         {/* Timer text */}

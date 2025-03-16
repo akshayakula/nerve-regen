@@ -165,11 +165,6 @@ function WebcamCapture() {
               ctx.arc(point[0], point[1], 5, 0, 2 * Math.PI);
               ctx.fillStyle = '#4F4099';
               ctx.fill();
-
-              // Add labels
-              ctx.font = '12px Inter';
-              ctx.fillStyle = 'white';
-              ctx.fillText(`Point ${index}`, point[0] + 10, point[1] + 10);
             });
 
             // Calculate and display wrist angle
