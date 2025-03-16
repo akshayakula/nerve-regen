@@ -61,7 +61,7 @@ function WebcamCapture() {
     // Function to check if the server is reachable
     const checkServerStatus = async () => {
       try {
-        const response = await fetch('http://localhost:5001/api/status');
+        const response = await fetch('http://localhost:5000/api/status');
         if (response.ok) {
           const data = await response.json();
           console.log('Server status:', data);
@@ -250,11 +250,11 @@ function WebcamCapture() {
 
   useEffect(() => {
     // Create socket with explicit configuration
-    const newSocket = io('http://localhost:5001', {
+    const newSocket = io('http://localhost:5000', {
       reconnectionAttempts: 5,
       reconnectionDelay: 1000,
       timeout: 20000,
-      transports: ['websocket', 'polling'] // Try WebSocket first, then fall back to polling
+      transports: ['polling', 'websocket'] // Try polling first, then WebSocket
     });
     setSocket(newSocket);
     
@@ -270,6 +270,13 @@ function WebcamCapture() {
     
     newSocket.on('connect_error', (err) => {
       console.error('Socket connection error:', err.message);
+      
+      // If using websocket fails, try polling
+      if (newSocket.io.opts.transports[0] === 'websocket') {
+        console.log('Switching to polling transport...');
+        newSocket.io.opts.transports = ['polling'];
+      }
+      
       setError('Failed to connect to server. Is the backend running?');
     });
     
@@ -447,6 +454,21 @@ function WebcamCapture() {
       videoRef.current.srcObject.getTracks().forEach(track => track.stop());
     }
   };
+
+  // Test CORS configuration
+  useEffect(() => {
+    const testCors = async () => {
+      try {
+        const response = await fetch('http://localhost:5000/api/cors-test');
+        const data = await response.json();
+        console.log('CORS test result:', data);
+      } catch (err) {
+        console.error('CORS test failed:', err);
+      }
+    };
+    
+    testCors();
+  }, []);
 
   if (error) {
     return <div className="text-destructive">{error}</div>;

@@ -14,18 +14,28 @@ const io = socketIo(server, {
     origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
     methods: ["GET", "POST"],
     credentials: true,
-    allowedHeaders: ["Content-Type"]
+    allowedHeaders: ["Content-Type", "Authorization"],
+    preflightContinue: false,
+    optionsSuccessStatus: 204
   }
 });
 
-const port = process.env.PORT || 5001;
+// Make sure the port is consistent with what the frontend is trying to connect to
+const port = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
   origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
-  credentials: true
+  credentials: true,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 }));
 app.use(express.json());
+
+// Handle preflight requests
+app.options('*', cors());
 
 // Arduino connection setup
 let arduinoPort = null;
@@ -174,6 +184,10 @@ function connectToArduino(path) {
 findArduino();
 
 // Socket.io connection
+io.engine.on("connection_error", (err) => {
+  console.log(`Connection error: ${err.code} - ${err.message}`);
+});
+
 io.on('connection', (socket) => {
   console.log('Client connected');
   
@@ -244,6 +258,11 @@ app.get('/api/arduino-status', (req, res) => {
       manufacturer: p.manufacturer || 'Unknown'
     })))
   });
+});
+
+// Test route for CORS
+app.get('/api/cors-test', (req, res) => {
+  res.json({ message: 'CORS is working' });
 });
 
 // Server status route for diagnostics
