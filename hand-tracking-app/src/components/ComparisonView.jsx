@@ -173,7 +173,7 @@ function ComparisonView({ currentData, onBack }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-[#1a1a1a] rounded-lg">
               <p className="text-sm text-gray-400">Tremor Frequency</p>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
                 <div>
                   <p className="text-sm text-purple-300">Current</p>
                   <p className="text-xl text-white">{currentAnalysis.tremors.frequency.toFixed(2)} Hz</p>
@@ -192,7 +192,7 @@ function ComparisonView({ currentData, onBack }) {
             
             <div className="p-4 bg-[#1a1a1a] rounded-lg">
               <p className="text-sm text-gray-400">Tremor Intensity</p>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
                 <div>
                   <p className="text-sm text-purple-300">Current</p>
                   <p className="text-xl text-white">{currentAnalysis.tremors.intensity.toFixed(2)}</p>
@@ -211,7 +211,7 @@ function ComparisonView({ currentData, onBack }) {
             
             <div className="p-4 bg-[#1a1a1a] rounded-lg">
               <p className="text-sm text-gray-400">Consistency</p>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
                 <div>
                   <p className="text-sm text-purple-300">Current</p>
                   <p className="text-xl text-white">{currentAnalysis.tremors.consistency.toFixed(2)}%</p>
@@ -236,7 +236,7 @@ function ComparisonView({ currentData, onBack }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-[#1a1a1a] rounded-lg">
               <p className="text-sm text-gray-400">Smoothness Index</p>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
                 <div>
                   <p className="text-sm text-purple-300">Current</p>
                   <p className="text-xl text-white">{currentAnalysis.smoothness.smoothnessIndex.toFixed(2)}</p>
@@ -255,14 +255,14 @@ function ComparisonView({ currentData, onBack }) {
             
             <div className="p-4 bg-[#1a1a1a] rounded-lg">
               <p className="text-sm text-gray-400">Movement Quality Score</p>
-              <div className="flex justify-between items-center">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
                 <div>
                   <p className="text-sm text-purple-300">Current</p>
-                  <p className="text-xl text-white">{currentAnalysis.smoothness.movementQuality.toFixed(2)}/10</p>
+                  <p className="text-xl text-white">{Math.min(10, currentAnalysis.smoothness.movementQuality).toFixed(2)}/10</p>
                 </div>
                 <div>
                   <p className="text-sm text-purple-300">Previous</p>
-                  <p className="text-xl text-white">{previousAnalysis.smoothness.movementQuality.toFixed(2)}/10</p>
+                  <p className="text-xl text-white">{Math.min(10, previousAnalysis.smoothness.movementQuality).toFixed(2)}/10</p>
                 </div>
                 <div className="text-sm">
                   <p className={`${currentAnalysis.smoothness.movementQuality > previousAnalysis.smoothness.movementQuality ? 'text-green-400' : 'text-red-400'}`}>
