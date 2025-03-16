@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
+import { analyzeTremors, analyzeMovementSmoothness, analyzeRangeOfMotion } from '../utils/movementAnalysis';
 Chart.register(...registerables);
 
 function SessionReport({ sessionData }) {
@@ -17,8 +18,6 @@ function SessionReport({ sessionData }) {
       tremors: analyzeTremors(data),
       smoothness: analyzeMovementSmoothness(data),
       rangeOfMotion: analyzeRangeOfMotion(data),
-      fatigue: analyzeFatigue(data),
-      patterns: analyzePatterns(data)
     };
     setAnalysis(analysis);
   };

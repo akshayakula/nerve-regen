@@ -13,11 +13,9 @@ export const analyzeTremors = (data) => {
 
 // Movement Smoothness
 export const analyzeMovementSmoothness = (data) => {
-  const jerkMetrics = calculateJerkMetrics(data);
   return {
     smoothnessIndex: calculateSmoothnessIndex(data),
-    jerkCost: jerkMetrics.jerkCost,
-    movementQuality: assessMovementQuality(jerkMetrics)
+    movementQuality: calculateMovementQuality(data)
   };
 };
 
@@ -33,8 +31,15 @@ export const analyzeRangeOfMotion = (data) => {
 
 // Helper functions
 function calculateTremorFrequency(magnitudes) {
-  // Implement FFT analysis here
-  return 4.2; // Example value
+  // Simple frequency estimation from peak counting
+  let peaks = 0;
+  for (let i = 1; i < magnitudes.length - 1; i++) {
+    if (magnitudes[i] > magnitudes[i-1] && magnitudes[i] > magnitudes[i+1]) {
+      peaks++;
+    }
+  }
+  // Convert to Hz assuming 100ms sampling rate
+  return (peaks * 10) / magnitudes.length;
 }
 
 function calculateTremorIntensity(magnitudes) {
@@ -42,18 +47,39 @@ function calculateTremorIntensity(magnitudes) {
 }
 
 function analyzeTremorConsistency(magnitudes) {
-  return 85; // Example value
+  // Calculate consistency as inverse of variance
+  const variance = Math.std(magnitudes) ** 2;
+  return Math.max(0, 100 - (variance * 100));
 }
 
 function calculateSmoothnessIndex(data) {
-  return 7.8; // Example value
+  // Calculate smoothness based on acceleration changes
+  const accelerations = data.map(d => 
+    Math.sqrt(d.GyroX**2 + d.GyroY**2 + d.GyroZ**2)
+  );
+  const changes = accelerations.slice(1).map((a, i) => 
+    Math.abs(a - accelerations[i])
+  );
+  return 10 - Math.min(10, Math.mean(changes));
+}
+
+function calculateMovementQuality(data) {
+  // Quality score based on movement consistency and smoothness
+  const smoothness = calculateSmoothnessIndex(data);
+  const gyroMagnitudes = data.map(d => 
+    Math.sqrt(d.GyroX**2 + d.GyroY**2 + d.GyroZ**2)
+  );
+  const consistency = analyzeTremorConsistency(gyroMagnitudes);
+  return (smoothness * 0.6 + (consistency/100) * 0.4) * 10;
 }
 
 function calculateROMMetrics(angles) {
+  const validAngles = angles.filter(a => !isNaN(a));
+  if (validAngles.length === 0) return { range: 0, mean: 0, std: 0 };
   return {
-    range: Math.max(...angles) - Math.min(...angles),
-    mean: Math.mean(angles),
-    std: Math.std(angles)
+    range: Math.max(...validAngles) - Math.min(...validAngles),
+    mean: Math.mean(validAngles),
+    std: Math.std(validAngles)
   };
 }
 
