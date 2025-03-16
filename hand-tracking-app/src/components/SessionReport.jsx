@@ -4,9 +4,9 @@ import { Button } from './ui/button';
 function SessionReport({ sessionData }) {
   const downloadReport = () => {
     // Format the data for CSV
-    const headers = "Timestamp,Wrist Angle,EMG Value,Voltage,Gyro X,Gyro Y,Gyro Z\n";
+    const headers = "Timestamp,Wrist Angle,EMG1,EMG2,Voltage1,Voltage2,Gyro X,Gyro Y,Gyro Z\n";
     const csvContent = sessionData.reduce((acc, record) => {
-      return acc + `${record.timestamp},${record.wristAngle},${record.emg},${record.voltage},${record.gyroX},${record.gyroY},${record.gyroZ}\n`;
+      return acc + `${record.timestamp},${record.wristAngle},${record.EMG1},${record.EMG2},${record.Voltage1},${record.Voltage2},${record.GyroX},${record.GyroY},${record.GyroZ}\n`;
     }, headers);
 
     // Create and trigger download

@@ -224,8 +224,10 @@ function WebcamCapture() {
       const timestamp = new Date().toISOString();
       setSessionData(prev => [...prev, {
         timestamp,
-        emg: data.EMG,
-        voltage: data.Voltage,
+        EMG1: data.EMG1,
+        EMG2: data.EMG2,
+        Voltage1: data.Voltage1,
+        Voltage2: data.Voltage2,
         gyroX: data.GyroX,
         gyroY: data.GyroY,
         gyroZ: data.GyroZ,

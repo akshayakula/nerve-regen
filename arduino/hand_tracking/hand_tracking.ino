@@ -1,48 +1,68 @@
-const int EMG_PIN = A0;    // EMG sensor on analog pin 0
-const int VOLTAGE_PIN = A1; // Voltage sensor on analog pin 1
-const int GYRO_X_PIN = A2;  // Gyroscope X-axis
-const int GYRO_Y_PIN = A3;  // Gyroscope Y-axis
-const int GYRO_Z_PIN = A4;  // Gyroscope Z-axis
+#include <Wire.h>
+#include <Adafruit_ADS1X15.h>
+#include <Adafruit_MPU6050.h>
+#include <Adafruit_Sensor.h>
+
+// Initialize ADC & MPU6050
+Adafruit_ADS1115 ads;
+Adafruit_MPU6050 mpu;
 
 void setup() {
-  Serial.begin(9600);
-  pinMode(EMG_PIN, INPUT);
-  pinMode(VOLTAGE_PIN, INPUT);
-  pinMode(GYRO_X_PIN, INPUT);
-  pinMode(GYRO_Y_PIN, INPUT);
-  pinMode(GYRO_Z_PIN, INPUT);
+  Serial.begin(115200);  // Match the higher baud rate
+  Wire.begin();
+
+  // Initialize ADS1115
+  if (!ads.begin()) {
+    Serial.println("Failed to find ADS1115!");
+    while (1);
+  }
+
+  // Initialize MPU6050
+  if (!mpu.begin()) {
+    Serial.println("Failed to find MPU6050!");
+    while (1);
+  }
+
+  mpu.setAccelerometerRange(MPU6050_RANGE_2_G);
+  mpu.setGyroRange(MPU6050_RANGE_250_DEG);
 }
 
 void loop() {
-  // Read sensor values
-  int emgValue = analogRead(EMG_PIN);
-  float voltage = analogRead(VOLTAGE_PIN) * (5.0 / 1023.0);
-  int gyroX = analogRead(GYRO_X_PIN);
-  int gyroY = analogRead(GYRO_Y_PIN);
-  int gyroZ = analogRead(GYRO_Z_PIN);
+  // Read EMG values from ADS1115
+  int16_t emg1 = ads.readADC_SingleEnded(0);
+  int16_t emg2 = ads.readADC_SingleEnded(1);
+  float emg1_voltage = ads.computeVolts(emg1);
+  float emg2_voltage = ads.computeVolts(emg2);
 
-  // Send data in format: "EMG:123 Voltage:3.5 GyroX:345 GyroY:456 GyroZ:567"
-  Serial.print("EMG:");
-  Serial.print(emgValue);
-  Serial.print(" Voltage:");
-  Serial.print(voltage);
+  // Read MPU6050 data
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
+
+  // Format data for our application
+  Serial.print("EMG1:");
+  Serial.print(emg1);
+  Serial.print(" EMG2:");
+  Serial.print(emg2);
+  Serial.print(" Voltage1:");
+  Serial.print(emg1_voltage);
+  Serial.print(" Voltage2:");
+  Serial.print(emg2_voltage);
   Serial.print(" GyroX:");
-  Serial.print(gyroX);
+  Serial.print(g.gyro.x);
   Serial.print(" GyroY:");
-  Serial.print(gyroY);
+  Serial.print(g.gyro.y);
   Serial.print(" GyroZ:");
-  Serial.println(gyroZ);
+  Serial.println(g.gyro.z);
 
-  // Check for incoming commands
+  // Check for incoming angle commands
   if (Serial.available() > 0) {
     String command = Serial.readStringUntil('\n');
     if (command.startsWith("ANGLE:")) {
-      int angle = command.substring(6).toInt();
-      // TODO: Add code to control hardware based on angle
+      float angle = command.substring(6).toFloat();
       Serial.print("Received angle: ");
       Serial.println(angle);
     }
   }
 
-  delay(100); // Sample every 100ms
+  delay(100);  // 10Hz sampling rate
 } 
