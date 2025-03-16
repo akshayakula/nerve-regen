@@ -173,7 +173,7 @@ function ComparisonView({ currentData, onBack }) {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-[#1a1a1a] rounded-lg">
               <p className="text-sm text-gray-400">Tremor Frequency</p>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
+              <div className="flex flex-col space-y-2">
                 <div>
                   <p className="text-sm text-purple-300">Current</p>
                   <p className="text-xl text-white">{currentAnalysis.tremors.frequency.toFixed(2)} Hz</p>
@@ -184,7 +184,7 @@ function ComparisonView({ currentData, onBack }) {
                 </div>
                 <div className="text-sm">
                   <p className={`${currentAnalysis.tremors.frequency < previousAnalysis.tremors.frequency ? 'text-green-400' : 'text-red-400'}`}>
-                    {((currentAnalysis.tremors.frequency - previousAnalysis.tremors.frequency) / previousAnalysis.tremors.frequency * 100).toFixed(1)}%
+                    Change: {((currentAnalysis.tremors.frequency - previousAnalysis.tremors.frequency) / previousAnalysis.tremors.frequency * 100).toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -192,7 +192,7 @@ function ComparisonView({ currentData, onBack }) {
             
             <div className="p-4 bg-[#1a1a1a] rounded-lg">
               <p className="text-sm text-gray-400">Tremor Intensity</p>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
+              <div className="flex flex-col space-y-2">
                 <div>
                   <p className="text-sm text-purple-300">Current</p>
                   <p className="text-xl text-white">{currentAnalysis.tremors.intensity.toFixed(2)}</p>
@@ -203,7 +203,7 @@ function ComparisonView({ currentData, onBack }) {
                 </div>
                 <div className="text-sm">
                   <p className={`${currentAnalysis.tremors.intensity < previousAnalysis.tremors.intensity ? 'text-green-400' : 'text-red-400'}`}>
-                    {((currentAnalysis.tremors.intensity - previousAnalysis.tremors.intensity) / previousAnalysis.tremors.intensity * 100).toFixed(1)}%
+                    Change: {((currentAnalysis.tremors.intensity - previousAnalysis.tremors.intensity) / previousAnalysis.tremors.intensity * 100).toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -211,7 +211,7 @@ function ComparisonView({ currentData, onBack }) {
             
             <div className="p-4 bg-[#1a1a1a] rounded-lg">
               <p className="text-sm text-gray-400">Consistency</p>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
+              <div className="flex flex-col space-y-2">
                 <div>
                   <p className="text-sm text-purple-300">Current</p>
                   <p className="text-xl text-white">{currentAnalysis.tremors.consistency.toFixed(2)}%</p>
@@ -222,7 +222,7 @@ function ComparisonView({ currentData, onBack }) {
                 </div>
                 <div className="text-sm">
                   <p className={`${currentAnalysis.tremors.consistency > previousAnalysis.tremors.consistency ? 'text-green-400' : 'text-red-400'}`}>
-                    {((currentAnalysis.tremors.consistency - previousAnalysis.tremors.consistency) / previousAnalysis.tremors.consistency * 100).toFixed(1)}%
+                    Change: {((currentAnalysis.tremors.consistency - previousAnalysis.tremors.consistency) / previousAnalysis.tremors.consistency * 100).toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -236,7 +236,7 @@ function ComparisonView({ currentData, onBack }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="p-4 bg-[#1a1a1a] rounded-lg">
               <p className="text-sm text-gray-400">Smoothness Index</p>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
+              <div className="flex flex-col space-y-2">
                 <div>
                   <p className="text-sm text-purple-300">Current</p>
                   <p className="text-xl text-white">{currentAnalysis.smoothness.smoothnessIndex.toFixed(2)}</p>
@@ -247,7 +247,7 @@ function ComparisonView({ currentData, onBack }) {
                 </div>
                 <div className="text-sm">
                   <p className={`${currentAnalysis.smoothness.smoothnessIndex > previousAnalysis.smoothness.smoothnessIndex ? 'text-green-400' : 'text-red-400'}`}>
-                    {((currentAnalysis.smoothness.smoothnessIndex - previousAnalysis.smoothness.smoothnessIndex) / previousAnalysis.smoothness.smoothnessIndex * 100).toFixed(1)}%
+                    Change: {((currentAnalysis.smoothness.smoothnessIndex - previousAnalysis.smoothness.smoothnessIndex) / previousAnalysis.smoothness.smoothnessIndex * 100).toFixed(1)}%
                   </p>
                 </div>
               </div>
@@ -255,7 +255,7 @@ function ComparisonView({ currentData, onBack }) {
             
             <div className="p-4 bg-[#1a1a1a] rounded-lg">
               <p className="text-sm text-gray-400">Movement Quality Score</p>
-              <div className="flex flex-col md:flex-row justify-between items-start md:items-center space-y-2 md:space-y-0">
+              <div className="flex flex-col space-y-2">
                 <div>
                   <p className="text-sm text-purple-300">Current</p>
                   <p className="text-xl text-white">{Math.min(10, currentAnalysis.smoothness.movementQuality).toFixed(2)}/10</p>
@@ -266,7 +266,7 @@ function ComparisonView({ currentData, onBack }) {
                 </div>
                 <div className="text-sm">
                   <p className={`${currentAnalysis.smoothness.movementQuality > previousAnalysis.smoothness.movementQuality ? 'text-green-400' : 'text-red-400'}`}>
-                    {((currentAnalysis.smoothness.movementQuality - previousAnalysis.smoothness.movementQuality) / previousAnalysis.smoothness.movementQuality * 100).toFixed(1)}%
+                    Change: {((currentAnalysis.smoothness.movementQuality - previousAnalysis.smoothness.movementQuality) / previousAnalysis.smoothness.movementQuality * 100).toFixed(1)}%
                   </p>
                 </div>
               </div>
