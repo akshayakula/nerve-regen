@@ -3,11 +3,13 @@ import { Button } from './ui/button';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { analyzeTremors, analyzeMovementSmoothness, analyzeRangeOfMotion } from '../utils/movementAnalysis';
+import ComparisonView from './ComparisonView';
 Chart.register(...registerables);
 
 function SessionReport({ sessionData }) {
   const [analysis, setAnalysis] = useState(null);
   const [processedData, setProcessedData] = useState(null);
+  const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
     // Process data once and use it for both CSV and charts
@@ -63,6 +65,10 @@ function SessionReport({ sessionData }) {
     document.body.removeChild(link);
   };
 
+  if (showComparison) {
+    return <ComparisonView currentData={processedData} onBack={() => setShowComparison(false)} />;
+  }
+
   return (
     <div className="flex flex-col items-center justify-center p-8">
       <h2 className="text-2xl font-bold font-poppins text-white mb-4">
@@ -72,12 +78,18 @@ function SessionReport({ sessionData }) {
         Your session data has been recorded. You can now download your detailed report.
       </p>
 
-      <div className="flex gap-4 mb-8">
+      <div className="flex flex-wrap gap-4 mb-8 justify-center">
         <Button
           onClick={downloadReport}
           className="bg-[#4F4099] hover:bg-[#3d3277] text-white px-8 py-3 rounded-lg text-lg"
         >
           Download Report
+        </Button>
+        <Button
+          onClick={() => setShowComparison(true)}
+          className="bg-[#3d3277] hover:bg-[#2a2255] text-white px-8 py-3 rounded-lg text-lg"
+        >
+          Compare with Previous Report
         </Button>
       </div>
 
