@@ -1,6 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react';
+import io from 'socket.io-client';
 import * as tf from '@tensorflow/tfjs';
 import * as handpose from '@tensorflow-models/handpose';
+import SensorData from './SensorData';
 
 function WebcamCapture() {
   const videoRef = useRef(null);
@@ -9,6 +11,7 @@ function WebcamCapture() {
   const [error, setError] = useState(null);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [handData, setHandData] = useState(null);
+  const [socket, setSocket] = useState(null);
 
   // Initialize webcam
   useEffect(() => {
@@ -177,6 +180,11 @@ function WebcamCapture() {
             ctx.font = '16px Inter';
             ctx.fillStyle = 'white';
             ctx.fillText(`Wrist Angle: ${angle.toFixed(2)}°`, 10, 30);
+
+            // Send angle to Arduino
+            if (socket) {
+              socket.emit('wristAngle', angle);
+            }
           }
         }
 
@@ -193,7 +201,13 @@ function WebcamCapture() {
         cancelAnimationFrame(requestId);
       }
     };
-  }, [model, isVideoReady]);
+  }, [model, isVideoReady, socket]);
+
+  useEffect(() => {
+    const newSocket = io('http://localhost:5000');
+    setSocket(newSocket);
+    return () => newSocket.disconnect();
+  }, []);
 
   if (error) {
     return <div className="text-destructive">{error}</div>;
@@ -227,6 +241,7 @@ function WebcamCapture() {
           </div>
         </div>
       )}
+      <SensorData />
     </div>
   );
 }
