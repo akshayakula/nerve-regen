@@ -259,6 +259,22 @@ function WebcamCapture() {
   }, []);
 
   const handleEndSession = () => {
+    // Stop data collection immediately
+    if (socket) {
+      socket.off('sensorData');
+    }
+    
+    // Add a final timestamp marker
+    const finalTimestamp = new Date().toISOString();
+    setSessionData(prev => {
+      // Mark the last entry with a flag
+      const finalData = [...prev];
+      if (finalData.length > 0) {
+        finalData[finalData.length - 1].isFinalDataPoint = true;
+      }
+      return finalData;
+    });
+    
     setShowWebcam(false);
     // Stop the webcam
     if (videoRef.current && videoRef.current.srcObject) {

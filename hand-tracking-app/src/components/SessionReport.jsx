@@ -11,7 +11,15 @@ function SessionReport({ sessionData }) {
 
   useEffect(() => {
     // Process data once and use it for both CSV and charts
-    const processed = sessionData.map(record => ({
+    // Find the index of the final data point if it exists
+    const finalIndex = sessionData.findIndex(record => record.isFinalDataPoint);
+    
+    // Use all data if no final marker, otherwise only use data up to the marker
+    const dataToProcess = finalIndex >= 0 ? 
+      sessionData.slice(0, finalIndex + 1) : 
+      sessionData;
+    
+    const processed = dataToProcess.map(record => ({
       timestamp: record.timestamp || new Date().toISOString(),
       wristAngle: Number(record.wristAngle?.toFixed(2)) || 0.00,
       EMG1: Number(record.EMG1?.toFixed(0)) || 500,
