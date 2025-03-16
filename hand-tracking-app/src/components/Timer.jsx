@@ -20,7 +20,7 @@ function Timer({ duration = 30, onComplete }) {
   }, [timeLeft, onComplete]);
 
   return (
-    <div className="absolute top-4 right-4 flex items-center justify-center">
+    <div className="absolute top-8 right-4 flex items-center justify-center">
       <div className="relative w-24 h-24">
         {/* Background circle */}
         <svg className="w-full h-full transform -rotate-90">
