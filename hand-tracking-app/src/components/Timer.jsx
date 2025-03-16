@@ -4,7 +4,12 @@ function Timer({ duration = 10, onComplete }) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = ((duration - timeLeft) / duration) * circumference;
+  const strokeDashoffset = circumference - (timeLeft / duration) * circumference;
+
+  useEffect(() => {
+    // Reset timeLeft when duration changes
+    setTimeLeft(duration);
+  }, [duration]);
 
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -17,7 +22,7 @@ function Timer({ duration = 10, onComplete }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, onComplete]);
+  }, [timeLeft, onComplete, duration]);
 
   return (
     <div className="absolute top-8 right-4 flex items-center justify-center">
@@ -43,7 +48,7 @@ function Timer({ duration = 10, onComplete }) {
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
-            className="transition-all duration-1000 ease-linear"
+            className="transition-all duration-500 ease-linear"
           />
         </svg>
         {/* Timer text */}
