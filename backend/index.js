@@ -57,12 +57,16 @@ function connectToArduino(path) {
     });
     
     parser.on('data', data => {
+      // Log raw data from Arduino
+      console.log('Raw Arduino data:', data);
+      
       try {
         const sensorData = JSON.parse(data);
         console.log('Data received:', sensorData);
         io.emit('sensorData', sensorData);
       } catch (e) {
-        console.error('Error parsing data:', data);
+        console.error('Error parsing data as JSON:', e.message);
+        console.error('Failed data was:', data);
       }
     });
     
@@ -109,6 +113,17 @@ io.on('connection', (socket) => {
 
 // Routes
 app.use('/api/user-data', userDataRoutes);
+
+// Arduino status route
+app.get('/api/arduino-status', (req, res) => {
+  res.json({
+    connected: arduinoPort !== null,
+    ports: SerialPort.list().then(ports => ports.map(p => ({
+      path: p.path,
+      manufacturer: p.manufacturer || 'Unknown'
+    })))
+  });
+});
 
 // Error handling
 app.use(errorHandler);
