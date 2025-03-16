@@ -229,18 +229,6 @@ function WebcamCapture() {
         width="640"
         height="480"
       />
-      {handData && (
-        <div className="mt-4 p-4 bg-[#1a1a1a] rounded-lg">
-          <h3 className="text-lg font-semibold mb-2 text-white">Hand Data</h3>
-          <div className="grid grid-cols-2 gap-4 text-sm text-gray-300">
-            {handData.landmarks.map((point, index) => (
-              <div key={index}>
-                Point {index}: ({point[0].toFixed(1)}, {point[1].toFixed(1)}, {point[2].toFixed(1)})
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
       <SensorData />
     </div>
   );
