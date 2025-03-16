@@ -52,18 +52,106 @@ function connectToArduino(path) {
     arduinoPort = new SerialPort({ path, baudRate: 9600 });
     const parser = arduinoPort.pipe(new ReadlineParser({ delimiter: '\n' }));
     
+    // Buffer to collect partial JSON
+    let jsonBuffer = '';
+    
+    // Buffer for smoothing
+    let dataBuffer = [];
+    const BUFFER_SIZE = 5;
+    
+    // Track data rate
+    let dataCount = 0;
+    let lastDataRateCheck = Date.now();
+    
     arduinoPort.on('open', () => {
       console.log('Serial port open');
+      
+      // Send a ping to Arduino to check if it's responsive
+      setTimeout(() => {
+        if (dataCount === 0) {
+          console.log('No data received from Arduino yet. Checking connection...');
+        }
+      }, 3000);
     });
     
     parser.on('data', data => {
-      // Log raw data from Arduino
-      console.log('Raw Arduino data:', data);
+      // Increment data counter
+      dataCount++;
+      
+      // Log data rate every 5 seconds
+      const now = Date.now();
+      if (now - lastDataRateCheck > 5000) {
+        const rate = dataCount / ((now - lastDataRateCheck) / 1000);
+        console.log(`Arduino data rate: ${rate.toFixed(1)} Hz (${dataCount} points in 5s)`);
+        dataCount = 0;
+        lastDataRateCheck = now;
+      }
+      
+      // Log raw data occasionally to avoid console spam
+      if (Math.random() < 0.1) {
+        console.log('Raw Arduino data:', data);
+      }
       
       try {
-        const sensorData = JSON.parse(data);
-        console.log('Data received:', sensorData);
-        io.emit('sensorData', sensorData);
+        // Try to parse as JSON
+        let sensorData;
+        try {
+          sensorData = JSON.parse(data);
+          jsonBuffer = ''; // Reset buffer on successful parse
+        } catch (e) {
+          // If parsing fails, it might be partial data
+          jsonBuffer += data;
+          try {
+            // Try to parse the accumulated buffer
+            sensorData = JSON.parse(jsonBuffer);
+            jsonBuffer = ''; // Reset buffer on successful parse
+          } catch (e) {
+            // Still not valid JSON, keep accumulating
+            if (jsonBuffer.length > 1000) {
+              // Buffer is too large, reset it
+              console.error('JSON buffer overflow, resetting');
+              jsonBuffer = '';
+            } else {
+              console.log('Accumulating partial JSON data, current length:', jsonBuffer.length);
+            }
+            return;
+          }
+        }
+        
+        // Validate data structure
+        if (!sensorData || typeof sensorData !== 'object') {
+          console.error('Invalid data structure:', sensorData);
+          return;
+        }
+        
+        // Log parsed data occasionally
+        if (Math.random() < 0.05) {
+          console.log('Data received:', sensorData);
+        }
+        
+        // Apply server-side smoothing
+        dataBuffer.push(sensorData);
+        if (dataBuffer.length > BUFFER_SIZE) {
+          dataBuffer.shift(); // Remove oldest data point
+          
+          // Simple averaging for gyroscope data
+          const smoothedData = {
+            EMG1: sensorData.EMG1,
+            EMG2: sensorData.EMG2,
+            GyroX: dataBuffer.reduce((sum, item) => sum + item.GyroX, 0) / dataBuffer.length,
+            GyroY: dataBuffer.reduce((sum, item) => sum + item.GyroY, 0) / dataBuffer.length,
+            GyroZ: dataBuffer.reduce((sum, item) => sum + item.GyroZ, 0) / dataBuffer.length,
+            Roll: sensorData.Roll,
+            Pitch: sensorData.Pitch,
+            Yaw: sensorData.Yaw
+          };
+          
+          // Send smoothed data to clients
+          io.emit('sensorData', smoothedData);
+        } else {
+          // Not enough data for smoothing yet, send raw data
+          io.emit('sensorData', sensorData);
+        }
       } catch (e) {
         console.error('Error parsing data as JSON:', e.message);
         console.error('Failed data was:', data);
@@ -84,8 +172,15 @@ findArduino();
 io.on('connection', (socket) => {
   console.log('Client connected');
   
+  // Send connection status to client
+  socket.emit('connectionStatus', { 
+    connected: true, 
+    arduinoConnected: arduinoPort !== null 
+  });
+  
   // If no Arduino is connected, send simulated data
   if (!arduinoPort) {
+    console.log('No Arduino connected, sending simulated data');
     const interval = setInterval(() => {
       const simulatedData = {
         EMG1: 500 + Math.random() * 100,
@@ -97,6 +192,10 @@ io.on('connection', (socket) => {
         Pitch: Math.cos(Date.now() / 1000) * 30,
         Yaw: (Date.now() % 3600) / 10
       };
+      // Log every 10th simulated data point to avoid console spam
+      if (Math.random() < 0.1) {
+        console.log('Sending simulated data:', simulatedData);
+      }
       socket.emit('sensorData', simulatedData);
     }, 100);
     
@@ -105,10 +204,22 @@ io.on('connection', (socket) => {
       console.log('Client disconnected');
     });
   } else {
+    // Let the client know we have a real Arduino connection
+    socket.emit('arduinoStatus', { connected: true, path: arduinoPort.path });
+    
     socket.on('disconnect', () => {
       console.log('Client disconnected');
     });
   }
+  
+  // Handle wrist angle data from frontend
+  socket.on('wristAngle', (angle) => {
+    // Log occasionally to avoid console spam
+    if (Math.random() < 0.05) {
+      console.log('Received wrist angle from frontend:', angle);
+    }
+    // You could send this back to Arduino if needed
+  });
 });
 
 // Routes

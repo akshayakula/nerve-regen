@@ -5,6 +5,8 @@ import * as handpose from '@tensorflow-models/handpose';
 import SensorData from './SensorData';
 import SessionReport from './SessionReport';
 import { Button } from './ui/button';
+import { exponentialMovingAverage, lowPassFilter } from '../utils/dataSmoothing';
+import DataDebugger from './DataDebugger';
 
 function WebcamCapture() {
   const videoRef = useRef(null);
@@ -16,6 +18,12 @@ function WebcamCapture() {
   const [socket, setSocket] = useState(null);
   const [showWebcam, setShowWebcam] = useState(true);
   const [sessionData, setSessionData] = useState([]);
+  const [smoothedData, setSmoothedData] = useState([]);
+  const [sensorBuffer, setSensorBuffer] = useState([]);
+  
+  // Smoothing parameters
+  const BUFFER_SIZE = 5;
+  const SMOOTHING_ALPHA = 0.2;
 
   // Initialize webcam
   useEffect(() => {
@@ -215,10 +223,40 @@ function WebcamCapture() {
     const newSocket = io('http://localhost:5001');
     setSocket(newSocket);
 
+    // Connection status handling
+    newSocket.on('connect', () => {
+      console.log('Connected to server');
+    });
+    
+    newSocket.on('disconnect', () => {
+      console.log('Disconnected from server');
+      setError('Connection to server lost. Please refresh the page.');
+    });
+    
+    newSocket.on('connect_error', (err) => {
+      console.error('Connection error:', err);
+      setError('Failed to connect to server. Is the backend running?');
+    });
+    
+    newSocket.on('connectionStatus', (status) => {
+      console.log('Connection status:', status);
+    });
+    
+    newSocket.on('arduinoStatus', (status) => {
+      console.log('Arduino status:', status);
+    });
+
     newSocket.on('sensorData', (data) => {
+      // Validate incoming data
+      if (!data || typeof data !== 'object') {
+        console.error('Invalid data received:', data);
+        return;
+      }
+      
       const timestamp = new Date().toISOString();
       // Use incoming data or default values if not available
       const sensorValues = {
+        timestamp,
         EMG1: data?.EMG1 ?? 500,
         EMG2: data?.EMG2 ?? 600,
         Voltage1: data?.Voltage1 ?? 3.3,
@@ -228,20 +266,30 @@ function WebcamCapture() {
         GyroZ: data?.GyroZ ?? 0.1,
         Roll: data?.Roll ?? 0,
         Pitch: data?.Pitch ?? 0,
-        Yaw: data?.Yaw ?? 0
+        Yaw: data?.Yaw ?? 0,
+        wristAngle: null // Will be updated when hand is detected
       };
 
-      setSessionData(prev => [...prev, {
-        timestamp,
-        ...sensorValues,
-        wristAngle: null // Will be updated when hand is detected
-      }]);
+      // Log data occasionally to avoid console spam
+      if (Math.random() < 0.05) {
+        console.log('Received sensor data:', sensorValues);
+      }
+      
+      // Add to buffer for smoothing
+      setSensorBuffer(prev => {
+        const newBuffer = [...prev, sensorValues];
+        // Keep buffer at fixed size
+        if (newBuffer.length > BUFFER_SIZE) {
+          return newBuffer.slice(newBuffer.length - BUFFER_SIZE);
+        }
+        return newBuffer;
+      });
     });
 
     // If no Arduino connection, simulate data every 100ms
     const simulateData = setInterval(() => {
       const timestamp = new Date().toISOString();
-      setSessionData(prev => [...prev, {
+      const simulatedValues = {
         timestamp,
         EMG1: 500 + Math.random() * 100,
         EMG2: 600 + Math.random() * 100,
@@ -252,7 +300,17 @@ function WebcamCapture() {
         Pitch: Math.cos(Date.now() / 1000) * 30,
         Yaw: (Date.now() % 3600) / 10,  // Slowly increasing yaw
         wristAngle: null
-      }]);
+      };
+
+      // Add to buffer for smoothing
+      setSensorBuffer(prev => {
+        const newBuffer = [...prev, simulatedValues];
+        // Keep buffer at fixed size
+        if (newBuffer.length > BUFFER_SIZE) {
+          return newBuffer.slice(newBuffer.length - BUFFER_SIZE);
+        }
+        return newBuffer;
+      });
     }, 100);
 
     return () => {
@@ -260,6 +318,38 @@ function WebcamCapture() {
       clearInterval(simulateData);
     };
   }, []);
+
+  // Apply smoothing when buffer changes
+  useEffect(() => {
+    if (sensorBuffer.length === 0) return;
+    
+    // Only process when we have enough data for smoothing
+    if (sensorBuffer.length >= BUFFER_SIZE) {
+      // Apply exponential smoothing to gyroscope data
+      const gyroSmoothed = exponentialMovingAverage(sensorBuffer, SMOOTHING_ALPHA, 'GyroX');
+      gyroSmoothed.forEach(item => {
+        item.GyroY = exponentialMovingAverage(sensorBuffer, SMOOTHING_ALPHA, 'GyroY')[sensorBuffer.indexOf(item)].GyroY;
+        item.GyroZ = exponentialMovingAverage(sensorBuffer, SMOOTHING_ALPHA, 'GyroZ')[sensorBuffer.indexOf(item)].GyroZ;
+      });
+      
+      // Apply low-pass filter to orientation data
+      const orientationSmoothed = lowPassFilter(gyroSmoothed, 0.1, 'Roll');
+      orientationSmoothed.forEach(item => {
+        item.Pitch = lowPassFilter(gyroSmoothed, 0.1, 'Pitch')[gyroSmoothed.indexOf(item)].Pitch;
+        item.Yaw = lowPassFilter(gyroSmoothed, 0.1, 'Yaw')[gyroSmoothed.indexOf(item)].Yaw;
+      });
+      
+      // Get the latest smoothed data point
+      const latestSmoothed = orientationSmoothed[orientationSmoothed.length - 1];
+      
+      // Add to session data
+      setSessionData(prev => [...prev, latestSmoothed]);
+      setSmoothedData(orientationSmoothed);
+    } else {
+      // If not enough data for smoothing, just use the raw data
+      setSessionData(prev => [...prev, sensorBuffer[sensorBuffer.length - 1]]);
+    }
+  }, [sensorBuffer]);
 
   const handleEndSession = () => {
     // Stop data collection immediately
@@ -314,6 +404,7 @@ function WebcamCapture() {
             End Session
           </Button>
           <SensorData />
+          <DataDebugger socket={socket} sensorBuffer={sensorBuffer} />
         </>
       ) : (
         <SessionReport sessionData={sessionData} />

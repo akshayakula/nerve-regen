@@ -3,12 +3,14 @@ import { Button } from './ui/button';
 import { Line } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
 import { analyzeTremors, analyzeMovementSmoothness, analyzeRangeOfMotion } from '../utils/movementAnalysis';
+import { movingAverage } from '../utils/dataSmoothing';
 import ComparisonView from './ComparisonView';
 Chart.register(...registerables);
 
 function SessionReport({ sessionData }) {
   const [analysis, setAnalysis] = useState(null);
   const [processedData, setProcessedData] = useState(null);
+  const [chartData, setChartData] = useState(null);
   const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
@@ -35,6 +37,25 @@ function SessionReport({ sessionData }) {
     }));
     
     setProcessedData(processed);
+    
+    // Apply additional smoothing for chart visualization
+    const smoothedForCharts = {
+      wristAngle: movingAverage(processed, 10, 'wristAngle'),
+      EMG1: movingAverage(processed, 5, 'EMG1'),
+      EMG2: movingAverage(processed, 5, 'EMG2'),
+      gyro: movingAverage(processed, 15, 'GyroX').map((item, i) => ({
+        ...item,
+        GyroY: movingAverage(processed, 15, 'GyroY')[i].GyroY,
+        GyroZ: movingAverage(processed, 15, 'GyroZ')[i].GyroZ
+      })),
+      orientation: movingAverage(processed, 10, 'Roll').map((item, i) => ({
+        ...item,
+        Pitch: movingAverage(processed, 10, 'Pitch')[i].Pitch,
+        Yaw: movingAverage(processed, 10, 'Yaw')[i].Yaw
+      }))
+    };
+    
+    setChartData(smoothedForCharts);
     analyzeMovement(processed);
   }, [sessionData]);
 
@@ -101,18 +122,18 @@ function SessionReport({ sessionData }) {
             <div className="h-64">
               <Line
                 data={{
-                  labels: processedData.map(d => new Date(d.timestamp).toLocaleTimeString()),
+                  labels: chartData.wristAngle.map(d => new Date(d.timestamp).toLocaleTimeString()),
                   datasets: [
                     {
                       label: 'Wrist Angle',
-                      data: processedData.map(d => d.wristAngle),
+                      data: chartData.wristAngle.map(d => d.wristAngle),
                       borderColor: '#4F4099',
                       tension: 0.4,
                       pointRadius: 0
                     },
                     {
                       label: 'Movement Intensity',
-                      data: processedData.map(d => 
+                      data: chartData.gyro.map(d => 
                         Math.sqrt(d.GyroX**2 + d.GyroY**2 + d.GyroZ**2)
                       ),
                       borderColor: '#9F4099',
@@ -204,19 +225,26 @@ function SessionReport({ sessionData }) {
             <div className="h-64 mb-4">
               <Line
                 data={{
-                  labels: processedData.map(d => new Date(d.timestamp).toLocaleTimeString()),
+                  labels: chartData.gyro.map(d => new Date(d.timestamp).toLocaleTimeString()),
                   datasets: [
                     {
-                      label: 'EMG 1',
-                      data: processedData.map(d => d.EMG1),
+                      label: 'X-axis',
+                      data: chartData.gyro.map(d => d.GyroX),
                       borderColor: '#4F4099',
                       tension: 0.4,
                       pointRadius: 0
                     },
                     {
-                      label: 'EMG 2',
-                      data: processedData.map(d => d.EMG2),
+                      label: 'Y-axis',
+                      data: chartData.gyro.map(d => d.GyroY),
                       borderColor: '#9F4099',
+                      tension: 0.4,
+                      pointRadius: 0
+                    },
+                    {
+                      label: 'Z-axis',
+                      data: chartData.gyro.map(d => d.GyroZ),
+                      borderColor: '#4F9099',
                       tension: 0.4,
                       pointRadius: 0
                     }
