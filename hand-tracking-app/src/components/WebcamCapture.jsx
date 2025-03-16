@@ -3,8 +3,8 @@ import io from 'socket.io-client';
 import * as tf from '@tensorflow/tfjs';
 import * as handpose from '@tensorflow-models/handpose';
 import SensorData from './SensorData';
-import Timer from './Timer';
 import SessionReport from './SessionReport';
+import { Button } from './ui/button';
 
 function WebcamCapture() {
   const videoRef = useRef(null);
@@ -255,7 +255,7 @@ function WebcamCapture() {
     };
   }, []);
 
-  const handleTimerComplete = () => {
+  const handleEndSession = () => {
     setShowWebcam(false);
     // Stop the webcam
     if (videoRef.current && videoRef.current.srcObject) {
@@ -271,9 +271,6 @@ function WebcamCapture() {
     <div className="relative bg-[#2a2a2a] rounded-xl p-6 shadow-xl transition-all duration-500">
       {showWebcam ? (
         <>
-          <h1 className="absolute top-4 left-4 text-2xl font-bold text-white font-poppins">
-            Regen
-          </h1>
           <video
             ref={videoRef}
             className="hidden"
@@ -288,7 +285,12 @@ function WebcamCapture() {
             width="640"
             height="480"
           />
-          <Timer onComplete={handleTimerComplete} />
+          <Button
+            onClick={handleEndSession}
+            className="absolute top-8 right-4 bg-[#4F4099] hover:bg-[#3d3277] text-white px-6 py-2 rounded-lg"
+          >
+            End Session
+          </Button>
           <SensorData />
         </>
       ) : (
