@@ -7,10 +7,25 @@ Chart.register(...registerables);
 
 function SessionReport({ sessionData }) {
   const [analysis, setAnalysis] = useState(null);
+  const [processedData, setProcessedData] = useState(null);
 
   useEffect(() => {
-    // Analyze data as soon as component mounts
-    analyzeMovement(sessionData);
+    // Process data once and use it for both CSV and charts
+    const processed = sessionData.map(record => ({
+      timestamp: record.timestamp || new Date().toISOString(),
+      wristAngle: Number(record.wristAngle?.toFixed(2)) || 0.00,
+      EMG1: Number(record.EMG1?.toFixed(0)) || 500,
+      EMG2: Number(record.EMG2?.toFixed(0)) || 600,
+      GyroX: Number(record.GyroX?.toFixed(2)) || 0.50,
+      GyroY: Number(record.GyroY?.toFixed(2)) || -0.30,
+      GyroZ: Number(record.GyroZ?.toFixed(2)) || 0.10,
+      Roll: Number(record.Roll?.toFixed(2)) || 0.00,
+      Pitch: Number(record.Pitch?.toFixed(2)) || 0.00,
+      Yaw: Number(record.Yaw?.toFixed(2)) || 0.00
+    }));
+    
+    setProcessedData(processed);
+    analyzeMovement(processed);
   }, [sessionData]);
 
   const analyzeMovement = (data) => {
@@ -23,23 +38,9 @@ function SessionReport({ sessionData }) {
   };
 
   const downloadReport = () => {
-    // Format the data for CSV
+    // Format the data for CSV using the same processed data
     const headers = "Timestamp,Wrist Angle,EMG1,EMG2,Gyro X,Gyro Y,Gyro Z,Roll,Pitch,Yaw\n";
-    const csvContent = sessionData.reduce((acc, record) => {
-      // Ensure all values are present or use defaults
-      const data = {
-        timestamp: record.timestamp || new Date().toISOString(),
-        wristAngle: record.wristAngle?.toFixed(2) || "0.00",
-        EMG1: record.EMG1?.toFixed(0) || "500",
-        EMG2: record.EMG2?.toFixed(0) || "600",
-        GyroX: record.GyroX?.toFixed(2) || "0.50",
-        GyroY: record.GyroY?.toFixed(2) || "-0.30",
-        GyroZ: record.GyroZ?.toFixed(2) || "0.10",
-        Roll: record.Roll?.toFixed(2) || "0.00",
-        Pitch: record.Pitch?.toFixed(2) || "0.00",
-        Yaw: record.Yaw?.toFixed(2) || "0.00"
-      };
-
+    const csvContent = processedData.reduce((acc, data) => {
       return acc + `${data.timestamp},${data.wristAngle},${data.EMG1},${data.EMG2},${data.GyroX},${data.GyroY},${data.GyroZ},${data.Roll},${data.Pitch},${data.Yaw}\n`;
     }, headers);
 
@@ -72,7 +73,7 @@ function SessionReport({ sessionData }) {
         </Button>
       </div>
 
-      {analysis && (
+      {analysis && processedData && (
         <div className="w-full space-y-8">
           {/* Movement Timeline */}
           <div className="bg-[#2a2a2a] rounded-xl p-6 shadow-xl">
@@ -80,18 +81,18 @@ function SessionReport({ sessionData }) {
             <div className="h-64">
               <Line
                 data={{
-                  labels: sessionData.map(d => new Date(d.timestamp).toLocaleTimeString()),
+                  labels: processedData.map(d => new Date(d.timestamp).toLocaleTimeString()),
                   datasets: [
                     {
                       label: 'Wrist Angle',
-                      data: sessionData.map(d => d.wristAngle),
+                      data: processedData.map(d => d.wristAngle),
                       borderColor: '#4F4099',
                       tension: 0.4,
                       pointRadius: 0
                     },
                     {
                       label: 'Movement Intensity',
-                      data: sessionData.map(d => 
+                      data: processedData.map(d => 
                         Math.sqrt(d.GyroX**2 + d.GyroY**2 + d.GyroZ**2)
                       ),
                       borderColor: '#9F4099',
@@ -183,18 +184,18 @@ function SessionReport({ sessionData }) {
             <div className="h-64 mb-4">
               <Line
                 data={{
-                  labels: sessionData.map(d => new Date(d.timestamp).toLocaleTimeString()),
+                  labels: processedData.map(d => new Date(d.timestamp).toLocaleTimeString()),
                   datasets: [
                     {
                       label: 'EMG 1',
-                      data: sessionData.map(d => d.EMG1),
+                      data: processedData.map(d => d.EMG1),
                       borderColor: '#4F4099',
                       tension: 0.4,
                       pointRadius: 0
                     },
                     {
                       label: 'EMG 2',
-                      data: sessionData.map(d => d.EMG2),
+                      data: processedData.map(d => d.EMG2),
                       borderColor: '#9F4099',
                       tension: 0.4,
                       pointRadius: 0
