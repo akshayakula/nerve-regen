@@ -245,6 +245,9 @@ function WebcamCapture() {
         GyroX: 0.5 + Math.random() * 0.2,
         GyroY: -0.3 + Math.random() * 0.2,
         GyroZ: 0.1 + Math.random() * 0.2,
+        Roll: Math.sin(Date.now() / 1000) * 45,  // Simulate rotation
+        Pitch: Math.cos(Date.now() / 1000) * 30,
+        Yaw: (Date.now() % 3600) / 10,  // Slowly increasing yaw
         wristAngle: null
       }]);
     }, 100);

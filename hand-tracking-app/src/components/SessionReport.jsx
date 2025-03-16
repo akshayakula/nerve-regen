@@ -4,7 +4,7 @@ import { Button } from './ui/button';
 function SessionReport({ sessionData }) {
   const downloadReport = () => {
     // Format the data for CSV
-    const headers = "Timestamp,Wrist Angle,EMG1,EMG2,Gyro X,Gyro Y,Gyro Z\n";
+    const headers = "Timestamp,Wrist Angle,EMG1,EMG2,Gyro X,Gyro Y,Gyro Z,Roll,Pitch,Yaw\n";
     const csvContent = sessionData.reduce((acc, record) => {
       // Ensure all values are present or use defaults
       const data = {
@@ -14,10 +14,13 @@ function SessionReport({ sessionData }) {
         EMG2: record.EMG2?.toFixed(0) || "600",
         GyroX: record.GyroX?.toFixed(2) || "0.50",
         GyroY: record.GyroY?.toFixed(2) || "-0.30",
-        GyroZ: record.GyroZ?.toFixed(2) || "0.10"
+        GyroZ: record.GyroZ?.toFixed(2) || "0.10",
+        Roll: record.Roll?.toFixed(2) || "0.00",
+        Pitch: record.Pitch?.toFixed(2) || "0.00",
+        Yaw: record.Yaw?.toFixed(2) || "0.00"
       };
 
-      return acc + `${data.timestamp},${data.wristAngle},${data.EMG1},${data.EMG2},${data.GyroX},${data.GyroY},${data.GyroZ}\n`;
+      return acc + `${data.timestamp},${data.wristAngle},${data.EMG1},${data.EMG2},${data.GyroX},${data.GyroY},${data.GyroZ},${data.Roll},${data.Pitch},${data.Yaw}\n`;
     }, headers);
 
     // Create and trigger download
