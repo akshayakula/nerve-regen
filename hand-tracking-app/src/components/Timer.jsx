@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-function Timer({ duration = 30, onComplete }) {
+function Timer({ duration = 10, onComplete }) {
   const [timeLeft, setTimeLeft] = useState(duration);
   const radius = 40;
   const circumference = 2 * Math.PI * radius;

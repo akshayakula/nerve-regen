@@ -247,8 +247,6 @@ function WebcamCapture() {
         timestamp,
         EMG1: 500 + Math.random() * 100,
         EMG2: 600 + Math.random() * 100,
-        Voltage1: 3.3 + Math.random() * 0.2,
-        Voltage2: 3.5 + Math.random() * 0.2,
         GyroX: 0.5 + Math.random() * 0.2,
         GyroY: -0.3 + Math.random() * 0.2,
         GyroZ: 0.1 + Math.random() * 0.2,

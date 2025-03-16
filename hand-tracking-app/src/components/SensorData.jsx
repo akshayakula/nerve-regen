@@ -5,8 +5,6 @@ function SensorData() {
   const [sensorData, setSensorData] = useState({
     EMG1: 500,  // Default EMG values (typical range 0-1023)
     EMG2: 600,
-    Voltage1: 3.3,  // Default voltage values (typical range 0-5V)
-    Voltage2: 3.5,
     GyroX: 0.5,  // Default gyro values (typical range ±250 deg/s)
     GyroY: -0.3,
     GyroZ: 0.1
@@ -37,14 +35,21 @@ function SensorData() {
           <p className="text-xl text-white">{sensorData.EMG2}</p>
         </div>
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="p-3 bg-[#1a1a1a] rounded-lg">
-          <p className="text-sm text-gray-400">Voltage 1</p>
-          <p className="text-xl text-white">{sensorData.Voltage1.toFixed(2)}V</p>
-        </div>
-        <div className="p-3 bg-[#1a1a1a] rounded-lg">
-          <p className="text-sm text-gray-400">Voltage 2</p>
-          <p className="text-xl text-white">{sensorData.Voltage2.toFixed(2)}V</p>
+      <div className="mt-4">
+        <h4 className="text-sm font-semibold text-gray-400 mb-2">Gyroscope Data (deg/s)</h4>
+        <div className="grid grid-cols-3 gap-4">
+          <div className="p-3 bg-[#1a1a1a] rounded-lg">
+            <p className="text-sm text-gray-400">X-Axis</p>
+            <p className="text-xl text-white">{sensorData.GyroX.toFixed(2)}°</p>
+          </div>
+          <div className="p-3 bg-[#1a1a1a] rounded-lg">
+            <p className="text-sm text-gray-400">Y-Axis</p>
+            <p className="text-xl text-white">{sensorData.GyroY.toFixed(2)}°</p>
+          </div>
+          <div className="p-3 bg-[#1a1a1a] rounded-lg">
+            <p className="text-sm text-gray-400">Z-Axis</p>
+            <p className="text-xl text-white">{sensorData.GyroZ.toFixed(2)}°</p>
+          </div>
         </div>
       </div>
     </div>
