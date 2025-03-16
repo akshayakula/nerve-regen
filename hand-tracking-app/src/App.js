@@ -25,7 +25,7 @@ function App() {
           ) : !showForm ? (
             <div className="text-center space-y-8 animate-fadeIn">
               <h1 className="text-5xl font-bold font-poppins mb-8 text-white">
-                Hand Tracking Web App
+              Regen - EMG and Motion Analysis
               </h1>
               <p className="text-lg text-gray-300 mb-8">
                 Track and analyze hand movements with precision
@@ -48,7 +48,6 @@ function App() {
             </div>
           ) : formSubmitted ? (
             <div className="animate-slideIn">
-              <h2 className="text-3xl font-bold font-poppins mb-8">Hand Tracking</h2>
               <WebcamCapture />
             </div>
           ) : (
