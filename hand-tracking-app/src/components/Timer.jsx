@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
 
 function Timer({ duration = 10, onComplete }) {
-  const [timeLeft, setTimeLeft] = useState(duration);
+  // Initialize timeLeft with duration
+  const [timeLeft, setTimeLeft] = useState(10);
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (timeLeft / duration) * circumference;
-
-  useEffect(() => {
-    // Reset timeLeft when duration changes
-    setTimeLeft(duration);
-  }, [duration]);
 
   useEffect(() => {
     if (timeLeft <= 0) {
@@ -22,7 +18,7 @@ function Timer({ duration = 10, onComplete }) {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft, onComplete, duration]);
+  }, [timeLeft, onComplete]);
 
   return (
     <div className="absolute top-8 right-4 flex items-center justify-center">
