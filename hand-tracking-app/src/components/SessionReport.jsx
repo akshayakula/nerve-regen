@@ -42,12 +42,22 @@ function SessionReport({ sessionData }) {
       <p className="text-gray-300 mb-6">
         Your session data has been recorded. You can now download your detailed report.
       </p>
-      <Button
-        onClick={downloadReport}
-        className="bg-[#4F4099] hover:bg-[#3d3277] text-white px-8 py-3 rounded-lg text-lg"
-      >
-        Download Report
-      </Button>
+      <div className="space-y-4">
+        <Button
+          onClick={downloadReport}
+          className="bg-[#4F4099] hover:bg-[#3d3277] text-white px-8 py-3 rounded-lg text-lg"
+        >
+          Download Report
+        </Button>
+        <div>
+          <Button
+            onClick={() => window.location.href = '/analysis'}
+            className="bg-[#3d3277] hover:bg-[#2a2255] text-white px-8 py-3 rounded-lg text-lg"
+          >
+            Analyze Previous Sessions
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
