@@ -20,8 +20,9 @@ const io = socketIo(server, {
   }
 });
 
-// Make sure the port is consistent with what the frontend is trying to connect to
-const port = process.env.PORT || 5000;
+// Try to use different ports if the preferred one is in use
+const preferredPort = process.env.PORT || 5001;
+let port = preferredPort;
 
 // Middleware
 app.use(cors({
@@ -139,6 +140,10 @@ function connectToArduino(path) {
           return;
         }
         
+        // Store the latest data
+        sensorData.timestamp = Date.now();
+        latestSensorData = sensorData;
+        
         // Log parsed data occasionally
         if (Math.random() < 0.05) {
           console.log('Data received:', sensorData);
@@ -188,8 +193,49 @@ io.engine.on("connection_error", (err) => {
   console.log(`Connection error: ${err.code} - ${err.message}`);
 });
 
+// Configure socket.io for better stability
+io.on('disconnect', (reason) => {
+  console.log(`Socket disconnected: ${reason}`);
+});
+
+io.on('reconnect', (attemptNumber) => {
+  console.log(`Socket reconnected after ${attemptNumber} attempts`);
+});
+
+io.on('reconnect_attempt', (attemptNumber) => {
+  console.log(`Socket reconnection attempt #${attemptNumber}`);
+});
+
+io.on('reconnect_error', (error) => {
+  console.log(`Socket reconnection error: ${error}`);
+});
+
+io.on('reconnect_failed', () => {
+  console.log('Socket reconnection failed');
+});
+
 io.on('connection', (socket) => {
   console.log('Client connected');
+  
+  // Debug all socket events
+  const originalOn = socket.on;
+  socket.on = function(event, handler) {
+    if (event !== 'newListener' && event !== 'removeListener') {
+      console.log(`Socket registered listener for: ${event}`);
+    }
+    return originalOn.call(this, event, function(...args) {
+      if (event !== 'newListener' && event !== 'removeListener') {
+        console.log(`Socket RECEIVED: ${event}`, args);
+      }
+      return handler.apply(this, args);
+    });
+  };
+  
+  const originalEmit = socket.emit;
+  socket.emit = function(event, ...args) {
+    console.log(`Socket EMIT: ${event}`, args);
+    return originalEmit.apply(this, [event, ...args]);
+  };
   
   // Send connection status to client
   socket.emit('connectionStatus', { 
@@ -197,25 +243,54 @@ io.on('connection', (socket) => {
     arduinoConnected: arduinoPort !== null 
   });
   
+  // Handle explicit data requests
+  socket.on('requestData', () => {
+    console.log('EXPLICITLY received requestData event from client');
+    
+    // If Arduino is connected, we'll send real data in the next cycle
+    // If not, send simulated data immediately
+    if (!arduinoPort) {
+      const simulatedData = generateSimulatedData();
+      console.log('Sending simulated data in response to requestData:', simulatedData);
+      socket.emit('sensorData', simulatedData);
+    }
+  });
+  
+  // Handle echo for testing
+  socket.on('echo', (data) => {
+    console.log('Received echo request:', data);
+    if (data && data.event) {
+      socket.emit(data.event, { 
+        echo: true, 
+        received: data,
+        timestamp: Date.now(),
+        message: 'Echo successful'
+      });
+    }
+  });
+  
   // Handle ping from client
   socket.on('ping', () => {
     socket.emit('pong', { timestamp: Date.now() });
+  });
+  
+  // Handle explicit disconnect request
+  socket.on('forceDisconnect', () => {
+    console.log('Client requested explicit disconnect');
+    socket.disconnect(true);
+  });
+  
+  // Handle client disconnect
+  socket.on('disconnect', (reason) => {
+    console.log(`Client disconnected: ${reason}`);
+    // Clean up any resources specific to this client
   });
   
   // If no Arduino is connected, send simulated data
   if (!arduinoPort) {
     console.log('No Arduino connected, sending simulated data');
     const interval = setInterval(() => {
-      const simulatedData = {
-        EMG1: 500 + Math.random() * 100,
-        EMG2: 600 + Math.random() * 100,
-        GyroX: 0.5 + Math.random() * 0.2,
-        GyroY: -0.3 + Math.random() * 0.2,
-        GyroZ: 0.1 + Math.random() * 0.2,
-        Roll: Math.sin(Date.now() / 1000) * 45,
-        Pitch: Math.cos(Date.now() / 1000) * 30,
-        Yaw: (Date.now() % 3600) / 10
-      };
+      const simulatedData = generateSimulatedData();
       // Log every 10th simulated data point to avoid console spam
       if (Math.random() < 0.1) {
         console.log('Sending simulated data:', simulatedData);
@@ -230,6 +305,20 @@ io.on('connection', (socket) => {
   } else {
     // Let the client know we have a real Arduino connection
     socket.emit('arduinoStatus', { connected: true, path: arduinoPort.path });
+    
+    // Send a test data point to verify data flow
+    socket.emit('sensorData', {
+      EMG1: 500,
+      EMG2: 600,
+      GyroX: 0,
+      GyroY: 0,
+      GyroZ: 0,
+      Roll: 0,
+      Pitch: 0,
+      Yaw: 0,
+      timestamp: Date.now(),
+      isTestData: true
+    });
     
     socket.on('disconnect', () => {
       console.log('Client disconnected');
@@ -275,9 +364,109 @@ app.get('/api/status', (req, res) => {
   });
 });
 
+// Create a route to tell clients which port we're actually using
+app.get('/api/port', (req, res) => {
+  res.json({ port });
+});
+
+// Latest sensor data endpoint
+let latestSensorData = generateSimulatedData(); // Initialize with simulated data
+
+// Update latest sensor data periodically
+setInterval(() => {
+  if (!arduinoPort) {
+    // If no Arduino, update with simulated data
+    latestSensorData = generateSimulatedData();
+  }
+  // If Arduino is connected, latestSensorData will be updated in the data handler
+}, 100);
+
+// Endpoint to get the latest sensor data
+app.get('/api/sensor-data', (req, res) => {
+  // Add a timestamp if not present
+  if (!latestSensorData.timestamp) {
+    latestSensorData.timestamp = Date.now();
+  }
+  
+  res.json(latestSensorData);
+});
+
+// Diagnostics route for connection testing
+app.get('/api/diagnostics', (req, res) => {
+  res.json({
+    server: {
+      uptime: process.uptime(),
+      timestamp: Date.now(),
+      port: port,
+      nodeVersion: process.version,
+      platform: process.platform
+    },
+    socket: {
+      connections: io.engine.clientsCount,
+      transports: io.engine.opts.transports
+    },
+    arduino: {
+      connected: arduinoPort !== null,
+      path: arduinoPort ? arduinoPort.path : null,
+      dataRate: arduinoPort ? 'Active' : 'Simulated'
+    },
+    memory: {
+      rss: process.memoryUsage().rss / 1024 / 1024,
+      heapTotal: process.memoryUsage().heapTotal / 1024 / 1024,
+      heapUsed: process.memoryUsage().heapUsed / 1024 / 1024
+    }
+  });
+});
+
+// Data flow diagnostic endpoint
+app.get('/api/data-test', (req, res) => {
+  const testData = generateSimulatedData();
+  testData.timestamp = Date.now();
+  testData.isTestData = true;
+  
+  // Broadcast to all connected clients
+  io.emit('sensorData', testData);
+  
+  res.json({
+    success: true,
+    message: 'Test data sent to all clients',
+    clientCount: io.engine.clientsCount,
+    testData
+  });
+});
+
 // Error handling
 app.use(errorHandler);
 
-server.listen(port, () => {
-  console.log(`Server running on port ${port}`);
-});
+function startServer(portToUse) {
+  server.listen(portToUse)
+    .on('listening', () => {
+      port = portToUse;
+      console.log(`Server running on port ${port}`);
+    })
+    .on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        console.log(`Port ${portToUse} is busy, trying ${portToUse + 1}...`);
+        startServer(portToUse + 1);
+      } else {
+        console.error('Server error:', err);
+      }
+    });
+}
+
+// Start the server with the preferred port
+startServer(preferredPort);
+
+// Helper function to generate simulated data
+function generateSimulatedData() {
+  return {
+    EMG1: 500 + Math.random() * 100,
+    EMG2: 600 + Math.random() * 100,
+    GyroX: 0.5 + Math.random() * 0.2,
+    GyroY: -0.3 + Math.random() * 0.2,
+    GyroZ: 0.1 + Math.random() * 0.2,
+    Roll: Math.sin(Date.now() / 1000) * 45,
+    Pitch: Math.cos(Date.now() / 1000) * 30,
+    Yaw: (Date.now() % 3600) / 10
+  };
+}

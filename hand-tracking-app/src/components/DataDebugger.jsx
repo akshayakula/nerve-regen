@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-function DataDebugger({ socket, sensorBuffer }) {
+function DataDebugger({ sensorBuffer }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState('Connecting...');
   const [lastDataTimestamp, setLastDataTimestamp] = useState(null);
@@ -8,31 +8,11 @@ function DataDebugger({ socket, sensorBuffer }) {
   const [dataPoints, setDataPoints] = useState(0);
   
   useEffect(() => {
-    if (!socket) return;
-    
-    const handleConnect = () => {
+    // Set connection status based on data flow
+    if (sensorBuffer && sensorBuffer.length > 0) {
       setConnectionStatus('Connected');
-      // Request server status on connection
-      socket.emit('getStatus');
-    };
-    const handleDisconnect = () => setConnectionStatus('Disconnected');
-    const handleError = () => setConnectionStatus('Error');
-    
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-    socket.on('connect_error', handleError);
-    socket.on('pong', (data) => {
-      const latency = Date.now() - data.timestamp;
-      console.log(`Socket latency: ${latency}ms`);
-    });
-    
-    return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
-      socket.off('connect_error', handleError);
-      socket.off('pong');
-    };
-  }, [socket]);
+    }
+  }, [sensorBuffer]);
   
   // Calculate data rate
   useEffect(() => {
@@ -87,17 +67,9 @@ function DataDebugger({ socket, sensorBuffer }) {
         </div>
         
         {connectionStatus !== 'Connected' && (
-          <button 
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white py-1 px-2 rounded text-xs mt-1"
-            onClick={() => {
-              if (socket) {
-                console.log('Attempting to reconnect...');
-                socket.connect();
-              }
-            }}
-          >
-            Reconnect
-          </button>
+          <div className="text-yellow-400 text-xs mt-1">
+            Waiting for data...
+          </div>
         )}
         
         <div className="flex justify-between">

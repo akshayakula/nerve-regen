@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './components/ui/button';
 import WizardForm from './components/WizardForm';
 import WebcamCapture from './components/WebcamCapture';
 import LearnMore from './components/LearnMore';
+import ConnectionTester from './components/ConnectionTester';
 import '@fontsource/inter';
 import '@fontsource/poppins';
 
@@ -10,11 +11,32 @@ function App() {
   const [showForm, setShowForm] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [showLearnMore, setShowLearnMore] = useState(false);
+  const [connectionTested, setConnectionTested] = useState(false);
+  const [serverPort, setServerPort] = useState(null);
 
   const handleFormSubmit = (formData) => {
     console.log('Form data:', formData);
     setFormSubmitted(true);
   };
+
+  useEffect(() => {
+    const testDirectConnection = async () => {
+      try {
+        console.log('Testing direct connection to port 5001...');
+        const response = await fetch('http://localhost:5001/api/status');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Direct connection successful:', data);
+        } else {
+          console.error('Direct connection failed with status:', response.status);
+        }
+      } catch (err) {
+        console.error('Direct connection test failed:', err);
+      }
+    };
+    
+    testDirectConnection();
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#1a1a1a] text-white font-inter">
@@ -48,7 +70,22 @@ function App() {
             </div>
           ) : formSubmitted ? (
             <div className="animate-slideIn">
-              <WebcamCapture />
+              {!connectionTested ? (
+                <div className="max-w-2xl mx-auto">
+                  <h2 className="text-xl text-center mb-6">Connection Test</h2>
+                  <p className="text-gray-400 text-center mb-8">
+                    Before starting, let's make sure your device can connect to the backend server.
+                  </p>
+                  <ConnectionTester 
+                    onConnectionSuccess={(port) => {
+                      setConnectionTested(true);
+                      setServerPort(5001);
+                    }} 
+                  />
+                </div>
+              ) : (
+                <WebcamCapture initialPort={5001} />
+              )}
             </div>
           ) : (
             <div className="animate-slideIn">

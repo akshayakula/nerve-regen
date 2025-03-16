@@ -1,128 +1,196 @@
-# Nerve-Regen
+# EMG and Motion Tracking System
 
-A hand tracking application for nerve regeneration therapy and monitoring.
+A comprehensive system for capturing, visualizing, and analyzing electromyography (EMG) signals and motion data from an Arduino-based sensor setup, combined with webcam-based hand tracking.
 
-## Prerequisites
+![System Screenshot](docs/images/system-screenshot.png)
+
+## Features
+
+- Real-time EMG signal visualization from two channels
+- 3D motion tracking with MPU6050 (gyroscope and accelerometer)
+- Webcam-based hand tracking with TensorFlow.js
+- Data synchronization between physical sensors and visual tracking
+- Interactive data visualization with real-time charts
+- Session recording and analysis
+- Responsive web interface
+
+## System Architecture
+
+The system consists of three main components:
+
+1. **Arduino Hardware**: Collects EMG signals and motion data
+2. **Node.js Backend**: Processes sensor data and serves it to the frontend
+3. **React Frontend**: Visualizes data and provides user interface
+
+## Getting Started
+
+### Prerequisites
 
 - Node.js (v14 or higher)
-- npm (comes with Node.js)
-- MongoDB (for backend database)
+- npm or yarn
+- Arduino IDE
+- Arduino Uno or compatible board
+- MAX4466 amplifier modules (x2)
+- MPU6050 gyroscope/accelerometer module
+- Electrodes for EMG sensing
+- Webcam
 
-## Project Structure
+### Hardware Setup
 
-```plaintext
-nerve-regen/
-├── backend/         # Backend server code
-├── hand-tracking-app/ # Frontend application
-└── node_modules/    # Project dependencies
-```
+#### Arduino Wiring Diagram
 
-## Setup Instructions
+![Arduino Wiring Diagram](docs/images/arduino-wiring.png)
 
-1. Clone the repository:
+#### EMG Sensor Setup (MAX4466)
 
-   ```bash
-   git clone [repository-url]
-   cd nerve-regen
+1. Connect the MAX4466 amplifier modules to the Arduino:
+   - MAX4466 #1 (EMG1):
+     - VCC → 3.3V on Arduino
+     - GND → GND on Arduino
+     - OUT → A0 on Arduino
+   - MAX4466 #2 (EMG2):
+     - VCC → 3.3V on Arduino
+     - GND → GND on Arduino
+     - OUT → A1 on Arduino
+
+2. Electrode Placement:
+   - For each EMG channel, you'll need 3 electrodes:
+     - Positive electrode: Place on the muscle belly
+     - Negative electrode: Place on the tendon or bone near the muscle
+     - Reference electrode: Place on a neutral area (e.g., bony prominence)
+   - Connect the electrodes to the MAX4466 input using shielded cables
+
+#### MPU6050 Setup
+
+1. Connect the MPU6050 to the Arduino:
+   - VCC → 3.3V on Arduino
+   - GND → GND on Arduino
+   - SCL → A5 on Arduino
+   - SDA → A4 on Arduino
+   - INT → D2 on Arduino (optional, for interrupt-based reading)
+
+### Software Installation
+
+#### Arduino Setup
+
+1. Install the required libraries in Arduino IDE:
+   - `Wire.h` (included with Arduino IDE)
+   - `MPU6050.h` (Install via Library Manager)
+
+2. Upload the Arduino sketch:
+   ```
+   cd arduino
+   // Open EMG_Motion_Sensor.ino in Arduino IDE and upload to your board
    ```
 
-2. Install dependencies:
+#### Backend Setup
 
-   ```bash
-   npm install
+1. Install dependencies:
    ```
-
-   This will install required packages including:
-   - @tensorflow-models/handpose
-   - @tensorflow/tfjs
-
-3. Set up the backend:
-
-   ```bash
    cd backend
    npm install
    ```
 
-   This will install backend dependencies including:
-   - Express.js for the server
-   - Mongoose for MongoDB integration
-   - CORS for cross-origin requests
-   - SerialPort for hardware communication
-   - Jest and Supertest for testing
-
-4. Start the backend development server:
-
-   ```bash
-   cd backend
-   npm run dev
+2. Start the backend server:
    ```
-
-   The server will start in development mode with hot-reload enabled.
-
-5. Set up the frontend:
-
-   ```bash
-   cd hand-tracking-app
-   npm install
-   ```
-
-   This will install frontend dependencies including:
-   - React and React DOM
-   - TensorFlow.js dependencies (from root)
-   - Testing libraries
-   - Tailwind CSS for styling
-   - Various UI components and utilities
-
-6. Start the frontend development server:
-
-   ```bash
-   cd hand-tracking-app
    npm start
    ```
+   The server will run on port 5001 by default.
 
-   The React application will start and open in your default browser at `http://localhost:3000`.
+#### Frontend Setup
 
-## Development Workflow
-
-1. Backend Development:
-   - Server runs on `http://localhost:8000` by default
-   - Uses nodemon for auto-reloading during development
-   - Run tests with `npm test` in the backend directory
-
-2. Frontend Development:
-   - Uses Create React App with hot-reloading
-   - Styled with Tailwind CSS
-   - Run tests with `npm test` in the frontend directory
-
-3. TensorFlow.js and Hand Tracking:
-   - Ensure good lighting for optimal hand detection
-   - Camera access is required for hand tracking features
-   - Consider GPU acceleration for better performance
-
-## MongoDB Setup
-
-The backend requires MongoDB to be running. Here's how to get started:
-
-1. Install MongoDB:
-   - [Download MongoDB Community Edition](https://www.mongodb.com/try/download/community)
-   - Follow the installation instructions for your operating system
-
-2. Start MongoDB:
-
-   ```bash
-   # The MongoDB service should start automatically after installation
-   # To verify MongoDB is running:
-   mongosh
+1. Install dependencies:
    ```
+   cd hand-tracking-app
+   npm install
+   ```
+
+2. Start the development server:
+   ```
+   npm start
+   ```
+   The application will open in your browser at http://localhost:3000
+
+## Usage
+
+1. Complete the "Getting Started" form to set up your session
+2. Allow webcam access when prompted
+3. Position your hand in the webcam view
+4. Click "Start Polling" to begin receiving sensor data
+5. Perform movements to see real-time data visualization
+6. Click "End Session" when finished to view your session report
+
+### Calibration
+
+For best results, calibrate the system before each use:
+
+1. Keep your hand still in a neutral position
+2. Click "Calibrate" in the interface
+3. Follow the on-screen instructions
+
+### Electrode Placement Tips
+
+- Clean the skin with alcohol before placing electrodes
+- Use conductive gel to improve signal quality
+- Secure electrodes with medical tape to prevent movement
+- Place electrodes along the muscle fiber direction
+- Maintain consistent electrode spacing (2-3 cm apart)
+
+## Troubleshooting
+
+### Common Issues
+
+#### No Arduino Connection
+- Check that the Arduino is properly connected via USB
+- Verify the correct COM port is being used
+- Ensure the correct Arduino sketch is uploaded
+
+#### Poor EMG Signal Quality
+- Check electrode placement and contact
+- Verify MAX4466 connections
+- Reduce environmental electrical noise
+- Check battery levels if using battery power
+
+#### Motion Tracking Issues
+- Ensure MPU6050 is properly connected
+- Calibrate the MPU6050 on a flat, stable surface
+- Check I2C connections (SDA/SCL)
+
+#### Webcam Hand Tracking Problems
+- Ensure adequate lighting
+- Position hand clearly in the frame
+- Check that webcam permissions are granted
+- Try a different browser if issues persist
+
+## Advanced Configuration
+
+### Arduino Sampling Rate
+
+The default sampling rate is 100Hz. To modify:
+
+1. Open `arduino/EMG_Motion_Sensor.ino`
+2. Locate the `sampleInterval` variable
+3. Adjust the value (in milliseconds)
+4. Upload the updated sketch
+
+### Backend Server Port
+
+The default port is 5001. To change:
+
+1. Open `backend/index.js`
+2. Modify the `preferredPort` variable
+3. Restart the backend server
 
 ## Contributing
 
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Acknowledgments
+
+- TensorFlow.js team for the handpose model
+- Arduino community for libraries and examples
+- All contributors and testers

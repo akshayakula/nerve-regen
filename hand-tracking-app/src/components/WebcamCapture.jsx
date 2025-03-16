@@ -1,5 +1,4 @@
 import React, { useRef, useEffect, useState } from 'react';
-import io from 'socket.io-client';
 import * as tf from '@tensorflow/tfjs';
 import * as handpose from '@tensorflow-models/handpose';
 import SensorData from './SensorData';
@@ -8,18 +7,54 @@ import { Button } from './ui/button';
 import { exponentialMovingAverage, lowPassFilter } from '../utils/dataSmoothing';
 import DataDebugger from './DataDebugger';
 
-function WebcamCapture() {
+// Function to calculate wrist angle from hand landmarks
+const calculateWristAngle = (handData) => {
+  if (!handData || !handData.annotations) return null;
+  
+  try {
+    // Get wrist and middle finger base points
+    const wrist = handData.annotations.palmBase[0];
+    const middleFingerBase = handData.annotations.middleFinger[0];
+    
+    if (!wrist || !middleFingerBase) return null;
+    
+    // Calculate angle in radians
+    const deltaX = middleFingerBase[0] - wrist[0];
+    const deltaY = middleFingerBase[1] - wrist[1];
+    const angleRad = Math.atan2(deltaY, deltaX);
+    
+    // Convert to degrees and normalize to 0-360 range
+    let angleDeg = (angleRad * 180) / Math.PI;
+    angleDeg = (angleDeg + 360) % 360;
+    
+    // Adjust angle based on hand orientation
+    // This may need calibration based on your specific use case
+    return angleDeg;
+  } catch (err) {
+    console.error('Error calculating wrist angle:', err);
+    return null;
+  }
+};
+
+function WebcamCapture({ initialPort }) {
+  console.log('WebcamCapture initialized with port:', initialPort);
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [model, setModel] = useState(null);
   const [error, setError] = useState(null);
   const [isVideoReady, setIsVideoReady] = useState(false);
   const [handData, setHandData] = useState(null);
-  const [socket, setSocket] = useState(null);
   const [showWebcam, setShowWebcam] = useState(true);
   const [sessionData, setSessionData] = useState([]);
   const [smoothedData, setSmoothedData] = useState([]);
   const [sensorBuffer, setSensorBuffer] = useState([]);
+  const [lastDataTimestamp, setLastDataTimestamp] = useState(0);
+  const [dataReceived, setDataReceived] = useState(false);
+  const [dataCount, setDataCount] = useState(0);
+  const [isPolling, setIsPolling] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState('disconnected');
+  const [pollingInterval, setPollingInterval] = useState(null);
+  const [isFetching, setIsFetching] = useState(false);
   
   // Smoothing parameters
   const BUFFER_SIZE = 5;
@@ -58,10 +93,14 @@ function WebcamCapture() {
 
   // Check server connectivity
   useEffect(() => {
+    // Skip initial check if we don't have a port yet
+    // Always use port 5001
+    const portToUse = 5001;
+    
     // Function to check if the server is reachable
     const checkServerStatus = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/status');
+        const response = await fetch(`http://localhost:${portToUse}/api/status`);
         if (response.ok) {
           const data = await response.json();
           console.log('Server status:', data);
@@ -80,10 +119,10 @@ function WebcamCapture() {
     checkServerStatus();
     
     // Then check periodically
-    const statusInterval = setInterval(checkServerStatus, 30000);
+    const statusInterval = setInterval(checkServerStatus, 60000); // Check less frequently
     
     return () => clearInterval(statusInterval);
-  }, []);
+  }, []); // No dependencies since we're always using port 5001
 
   // Handle video loaded
   const handleVideoLoad = () => {
@@ -217,11 +256,6 @@ function WebcamCapture() {
             ctx.fillStyle = 'white';
             ctx.fillText(`Wrist Angle: ${angle.toFixed(2)}°`, 10, 30);
 
-            // Send angle to Arduino
-            if (socket) {
-              socket.emit('wristAngle', angle);
-            }
-
             // Update the latest session data entry with the wrist angle
             setSessionData(prev => {
               const newData = [...prev];
@@ -246,196 +280,69 @@ function WebcamCapture() {
         cancelAnimationFrame(requestId);
       }
     };
-  }, [model, isVideoReady, socket]);
+  }, [model, isVideoReady]);
 
+  // Start polling when component mounts
   useEffect(() => {
-    // Create socket with explicit configuration
-    const newSocket = io('http://localhost:5000', {
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-      timeout: 20000,
-      transports: ['polling', 'websocket'] // Try polling first, then WebSocket
-    });
-    setSocket(newSocket);
-    
-    // Connection status handling
-    newSocket.on('connect', () => {
-      console.log('Connected to server');
-    });
-    
-    newSocket.on('disconnect', () => {
-      console.log('Disconnected from server');
-      setError('Connection to server lost. Please refresh the page.');
-    });
-    
-    newSocket.on('connect_error', (err) => {
-      console.error('Socket connection error:', err.message);
-      
-      // If using websocket fails, try polling
-      if (newSocket.io.opts.transports[0] === 'websocket') {
-        console.log('Switching to polling transport...');
-        newSocket.io.opts.transports = ['polling'];
-      }
-      
-      setError('Failed to connect to server. Is the backend running?');
-    });
-    
-    newSocket.on('connectionStatus', (status) => {
-      console.log('Connection status:', status);
-    });
-    
-    newSocket.on('arduinoStatus', (status) => {
-      console.log('Arduino status:', status);
-    });
-
-    newSocket.on('sensorData', (data) => {
-      // Validate incoming data
-      if (!data || typeof data !== 'object') {
-        console.error('Invalid data received:', data);
-        return;
-      }
-      
-      const timestamp = new Date().toISOString();
-      // Use incoming data or default values if not available
-      const sensorValues = {
-        timestamp,
-        EMG1: data?.EMG1 ?? 500,
-        EMG2: data?.EMG2 ?? 600,
-        Voltage1: data?.Voltage1 ?? 3.3,
-        Voltage2: data?.Voltage2 ?? 3.5,
-        GyroX: data?.GyroX ?? 0.5,
-        GyroY: data?.GyroY ?? -0.3,
-        GyroZ: data?.GyroZ ?? 0.1,
-        Roll: data?.Roll ?? 0,
-        Pitch: data?.Pitch ?? 0,
-        Yaw: data?.Yaw ?? 0,
-        wristAngle: null // Will be updated when hand is detected
-      };
-
-      // Log data occasionally to avoid console spam
-      if (Math.random() < 0.05) {
-        console.log('Received sensor data:', sensorValues);
-      }
-      
-      // Add to buffer for smoothing
-      setSensorBuffer(prev => {
-        const newBuffer = [...prev, sensorValues];
-        // Keep buffer at fixed size
-        if (newBuffer.length > BUFFER_SIZE) {
-          return newBuffer.slice(newBuffer.length - BUFFER_SIZE);
+    // Check server status first
+    const checkServerStatus = async () => {
+      try {
+        const response = await fetch('http://localhost:5001/api/status');
+        if (response.ok) {
+          console.log('Server is available, starting polling');
+          startPolling();
+        } else {
+          setError('Server is not responding properly');
         }
-        return newBuffer;
-      });
-    });
-
-    // Add a ping mechanism to keep the connection alive
-    const pingInterval = setInterval(() => {
-      if (newSocket.connected) {
-        newSocket.emit('ping');
-      } else {
-        console.log('Socket not connected, attempting to reconnect...');
-        newSocket.connect();
+      } catch (err) {
+        console.error('Failed to reach server:', err);
+        setError('Cannot connect to server. Please ensure the backend is running.');
       }
-    }, 10000);
-
-    // If no Arduino connection, simulate data every 100ms
-    const simulateData = setInterval(() => {
-      const timestamp = new Date().toISOString();
-      const simulatedValues = {
-        timestamp,
-        EMG1: 500 + Math.random() * 100,
-        EMG2: 600 + Math.random() * 100,
-        GyroX: 0.5 + Math.random() * 0.2,
-        GyroY: -0.3 + Math.random() * 0.2,
-        GyroZ: 0.1 + Math.random() * 0.2,
-        Roll: Math.sin(Date.now() / 1000) * 45,  // Simulate rotation
-        Pitch: Math.cos(Date.now() / 1000) * 30,
-        Yaw: (Date.now() % 3600) / 10,  // Slowly increasing yaw
-        wristAngle: null
-      };
-
-      // Add to buffer for smoothing
-      setSensorBuffer(prev => {
-        const newBuffer = [...prev, simulatedValues];
-        // Keep buffer at fixed size
-        if (newBuffer.length > BUFFER_SIZE) {
-          return newBuffer.slice(newBuffer.length - BUFFER_SIZE);
-        }
-        return newBuffer;
-      });
-    }, 100);
-
+    };
+    
+    checkServerStatus();
+    
+    // Clean up on unmount
     return () => {
-      newSocket.disconnect();
-      clearInterval(simulateData);
-      clearInterval(pingInterval);
+      stopPolling();
     };
   }, []);
 
-  // Apply smoothing when buffer changes
+  // Apply smoothing to sensor data
   useEffect(() => {
     if (sensorBuffer.length === 0) return;
     
-    // Only process when we have enough data for smoothing
-    if (sensorBuffer.length >= BUFFER_SIZE) {
-      try {
-        // Create a deep copy of the buffer to avoid mutation issues
-        const bufferCopy = JSON.parse(JSON.stringify(sensorBuffer));
+    // Apply smoothing to the buffer
+    const smoothed = {};
+    
+    // Get the latest data point
+    const latestData = sensorBuffer[sensorBuffer.length - 1];
+    
+    // Apply smoothing to each numeric property
+    Object.keys(latestData).forEach(key => {
+      if (typeof latestData[key] === 'number') {
+        // Extract values for this property from the buffer
+        const values = sensorBuffer.map(d => d[key]);
         
-        // Apply smoothing to each property individually
-        const smoothedData = { ...bufferCopy[bufferCopy.length - 1] };
-        
-        // Apply exponential smoothing to gyroscope data
-        smoothedData.GyroX = exponentialMovingAverage(
-          bufferCopy.map(item => item.GyroX || 0), 
-          SMOOTHING_ALPHA
-        )[bufferCopy.length - 1];
-        
-        smoothedData.GyroY = exponentialMovingAverage(
-          bufferCopy.map(item => item.GyroY || 0), 
-          SMOOTHING_ALPHA
-        )[bufferCopy.length - 1];
-        
-        smoothedData.GyroZ = exponentialMovingAverage(
-          bufferCopy.map(item => item.GyroZ || 0), 
-          SMOOTHING_ALPHA
-        )[bufferCopy.length - 1];
-        
-        // Apply low-pass filter to orientation data
-        smoothedData.Roll = lowPassFilter(
-          bufferCopy.map(item => item.Roll || 0), 
-          0.1
-        )[bufferCopy.length - 1];
-        
-        smoothedData.Pitch = lowPassFilter(
-          bufferCopy.map(item => item.Pitch || 0), 
-          0.1
-        )[bufferCopy.length - 1];
-        
-        smoothedData.Yaw = lowPassFilter(
-          bufferCopy.map(item => item.Yaw || 0), 
-          0.1
-        )[bufferCopy.length - 1];
-        
-        // Add to session data
-        setSessionData(prev => [...prev, smoothedData]);
-        setSmoothedData(prev => [...prev, smoothedData]);
-      } catch (err) {
-        console.error('Error in smoothing data:', err);
-        // Fallback to using the raw data
-        setSessionData(prev => [...prev, sensorBuffer[sensorBuffer.length - 1]]);
+        // Apply exponential moving average
+        smoothed[key] = exponentialMovingAverage(values, SMOOTHING_ALPHA);
+      } else {
+        // For non-numeric properties, just use the latest value
+        smoothed[key] = latestData[key];
       }
-    } else {
-      // If not enough data for smoothing, just use the raw data
-      setSessionData(prev => [...prev, sensorBuffer[sensorBuffer.length - 1]]);
-    }
+    });
+    
+    // Update smoothed data
+    setSmoothedData(smoothed);
+    
+    // With HTTP polling, we don't need to send data back to the server
+    // If needed, we could implement a POST request here
+    
   }, [sensorBuffer]);
 
   const handleEndSession = () => {
     // Stop data collection immediately
-    if (socket) {
-      socket.off('sensorData');
-    }
+    stopPolling();
     
     // Add a final timestamp marker
     const finalTimestamp = new Date().toISOString();
@@ -459,7 +366,7 @@ function WebcamCapture() {
   useEffect(() => {
     const testCors = async () => {
       try {
-        const response = await fetch('http://localhost:5000/api/cors-test');
+        const response = await fetch('http://localhost:5001/api/cors-test');
         const data = await response.json();
         console.log('CORS test result:', data);
       } catch (err) {
@@ -470,17 +377,275 @@ function WebcamCapture() {
     testCors();
   }, []);
 
-  if (error) {
-    return <div className="text-destructive">{error}</div>;
-  }
+  // Discover the actual server port
+  useEffect(() => {
+    // Force port to be 5001
+    console.log('Forcing server port to 5001');
+    return;
+    
+    // Skip port discovery if we already have an initialPort
+    if (initialPort) {
+      console.log('Using provided initialPort:', initialPort);
+      return;
+    }
+    
+    const discoverPort = async () => {
+      // Try common ports
+      const portsToTry = [5001]; // Only try port 5001 since we know the server is on this port
+      
+      for (const port of portsToTry) {
+        try {
+          const response = await fetch(`http://localhost:${port}/api/port`);
+          if (response.ok) {
+            const data = await response.json();
+            console.log(`Server found on port ${data.port}`);
+            return;
+          }
+        } catch (err) {
+          console.log(`No server on port ${port}`);
+        }
+      }
+      
+      setError('Could not find the server on any common port');
+    };
+    
+    discoverPort();
+  }, [initialPort]);
+
+  // Function to request data directly
+  const requestData = () => {
+    console.log('Requesting data directly...');
+    
+    // Make a direct API call to fetch sensor data
+    fetch('http://localhost:5001/api/sensor-data')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`HTTP error: ${response.status}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log('Sensor data received:', data);
+        processSensorData(data);
+        setConnectionStatus('connected');
+      })
+      .catch(err => {
+        console.error('Failed to fetch sensor data:', err);
+        setConnectionStatus('disconnected');
+        setError('Failed to fetch sensor data. Is the server running?');
+      });
+  };
+
+  // Function to fetch sensor data
+  const fetchSensorData = async () => {
+    setIsFetching(true);
+    try {
+      const response = await fetch('http://localhost:5001/api/sensor-data');
+      if (!response.ok) {
+        throw new Error(`HTTP error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Process the received data
+      processSensorData(data);
+      
+      // Update connection status
+      setConnectionStatus('connected');
+      setError(null);
+      
+      // Log data occasionally
+      if (dataCount % 20 === 0) {
+        console.log('Sensor data received:', data);
+      }
+      
+      setIsFetching(false);
+      return data;
+    } catch (err) {
+      console.error('Failed to fetch sensor data:', err);
+      setConnectionStatus('disconnected');
+      setError('Failed to fetch sensor data. Is the server running?');
+      setIsFetching(false);
+      return null;
+    }
+  };
+
+  // Function to process sensor data
+  const processSensorData = (data) => {
+    if (!data) return;
+    
+    // Update data tracking
+    setDataReceived(true);
+    setDataCount(prev => prev + 1);
+    setLastDataTimestamp(Date.now());
+    
+    // Log data periodically
+    if (dataCount % 20 === 0) {
+      console.log(`Received ${dataCount} data points. Latest:`, data);
+    }
+    
+    const timestamp = new Date().toISOString();
+    // Use incoming data or default values if not available
+    const sensorValues = {
+      timestamp,
+      EMG1: data.EMG1 || 0,
+      EMG2: data.EMG2 || 0,
+      GyroX: data.GyroX || 0,
+      GyroY: data.GyroY || 0,
+      GyroZ: data.GyroZ || 0,
+      Roll: data.Roll || 0,
+      Pitch: data.Pitch || 0,
+      Yaw: data.Yaw || 0,
+      wristAngle: handData ? calculateWristAngle(handData) : null
+    };
+    
+    // Add to buffer for smoothing
+    setSensorBuffer(prev => {
+      const newBuffer = [...prev, sensorValues];
+      // Keep buffer at fixed size
+      if (newBuffer.length > BUFFER_SIZE) {
+        return newBuffer.slice(newBuffer.length - BUFFER_SIZE);
+      }
+      return newBuffer;
+    });
+    
+    // Add to session data
+    setSessionData(prev => [...prev, sensorValues]);
+  };
+
+  // Function to start polling
+  const startPolling = () => {
+    if (isPolling) return;
+    
+    console.log('Starting sensor data polling');
+    setIsPolling(true);
+    
+    // Fetch immediately
+    fetchSensorData();
+    
+    // Then set up interval
+    const interval = setInterval(() => {
+      fetchSensorData();
+    }, 1000); // Poll every second
+    
+    setPollingInterval(interval);
+  };
+
+  // Function to stop polling
+  const stopPolling = () => {
+    if (!isPolling) return;
+    
+    console.log('Stopping sensor data polling');
+    setIsPolling(false);
+    
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+  };
+
+  // Simulate sensor data for testing
+  useEffect(() => {
+    if (isPolling || !isVideoReady) return;
+    
+    console.log('No socket connection, simulating sensor data');
+    
+    const simulateData = setInterval(() => {
+      const timestamp = new Date().toISOString();
+      const simulatedData = {
+        timestamp,
+        EMG1: 500 + Math.random() * 100,
+        EMG2: 600 + Math.random() * 100,
+        GyroX: 0.5 + Math.random() * 0.2,
+        GyroY: -0.3 + Math.random() * 0.2,
+        GyroZ: 0.1 + Math.random() * 0.2,
+        Roll: Math.sin(Date.now() / 1000) * 45,
+        Pitch: Math.cos(Date.now() / 1000) * 30,
+        Yaw: (Date.now() % 3600) / 10,
+        wristAngle: handData ? calculateWristAngle(handData) : null
+      };
+      
+      // Process the simulated data
+      processSensorData(simulatedData);
+      
+    }, 100);
+    
+    return () => clearInterval(simulateData);
+  }, [isPolling, isVideoReady, handData]);
 
   return (
-    <div className="relative bg-[#2a2a2a] rounded-xl p-6 shadow-xl transition-all duration-500">
+    <div className="relative bg-[#2a2a2a] rounded-xl p-6 shadow-xl transition-all duration-500 max-w-full overflow-x-hidden">
+      {dataReceived && (
+        <div className="absolute top-12 right-2 z-50 bg-green-500 text-white px-2 py-1 rounded text-xs animate-pulse">
+          Data flowing: {dataCount} points
+        </div>
+      )}
+      <div className="absolute top-2 right-2 z-50">
+        <button 
+          className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+          onClick={() => {
+            if (isPolling) {
+              stopPolling();
+            } else {
+              startPolling();
+            }
+          }}
+        >
+          {isPolling ? 'Stop Polling' : 'Start Polling'}
+        </button>
+        <button 
+          className={`${isFetching ? 'bg-yellow-500' : 'bg-green-500'} text-white px-2 py-1 rounded text-xs ml-2`}
+          onClick={() => {
+            // Add a visual indicator that the button was clicked
+            const btn = document.activeElement;
+            if (btn) {
+              btn.style.backgroundColor = '#ff0000';
+              setTimeout(() => { btn.style.backgroundColor = isFetching ? '#eab308' : '#22c55e'; }, 500);
+            }
+            
+            fetchSensorData();
+          }}
+          disabled={isFetching}
+        >
+          {isFetching ? 'Fetching...' : 'Fetch Now'}
+        </button>
+      </div>
       {error && (
         <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 text-center z-50">
           {error}
+          {connectionStatus === 'disconnected' && (
+            <button 
+              className="ml-2 bg-white text-red-500 px-2 py-1 rounded text-xs"
+              onClick={() => {
+                startPolling();
+              }}
+            >
+              Retry Connection
+            </button>
+          )}
         </div>
       )}
+      <div className="absolute top-2 left-2 flex items-center text-xs text-gray-400 z-40">
+        <div className={`w-2 h-2 rounded-full mr-1 ${connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+        {connectionStatus === 'connected' ? 'Connected' : 'Disconnected'} (Port: 5001)
+        {connectionStatus === 'connected' && (
+          <>
+            <span className="mx-2">|</span>
+            <div className={`w-2 h-2 rounded-full mr-1 ${dataReceived ? 'bg-green-500' : 'bg-yellow-500'}`}></div>
+            <span>{dataReceived ? `Data: ${dataCount}` : 'No data'}</span>
+          </>
+        )}
+        {connectionStatus === 'disconnected' && (
+          <button 
+            className="ml-2 bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded text-xs"
+            onClick={() => {
+              startPolling();
+            }}
+          >
+            Retry
+          </button>
+        )}
+      </div>
       {showWebcam ? (
         <>
           <video
@@ -503,8 +668,8 @@ function WebcamCapture() {
           >
             End Session
           </Button>
-          <SensorData />
-          <DataDebugger socket={socket} sensorBuffer={sensorBuffer} />
+          <SensorData sensorBuffer={sensorBuffer} smoothedData={smoothedData} />
+          <DataDebugger sensorBuffer={sensorBuffer} />
         </>
       ) : (
         <SessionReport sessionData={sessionData} />
@@ -513,4 +678,4 @@ function WebcamCapture() {
   );
 }
 
-export default WebcamCapture; 
+export default WebcamCapture;
