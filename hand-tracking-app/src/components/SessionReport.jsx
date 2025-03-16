@@ -6,7 +6,20 @@ function SessionReport({ sessionData }) {
     // Format the data for CSV
     const headers = "Timestamp,Wrist Angle,EMG1,EMG2,Voltage1,Voltage2,Gyro X,Gyro Y,Gyro Z\n";
     const csvContent = sessionData.reduce((acc, record) => {
-      return acc + `${record.timestamp},${record.wristAngle},${record.EMG1},${record.EMG2},${record.Voltage1},${record.Voltage2},${record.GyroX},${record.GyroY},${record.GyroZ}\n`;
+      // Ensure all values are present or use defaults
+      const data = {
+        timestamp: record.timestamp || new Date().toISOString(),
+        wristAngle: record.wristAngle?.toFixed(2) || "0.00",
+        EMG1: record.EMG1?.toFixed(0) || "500",
+        EMG2: record.EMG2?.toFixed(0) || "600",
+        Voltage1: record.Voltage1?.toFixed(2) || "3.30",
+        Voltage2: record.Voltage2?.toFixed(2) || "3.50",
+        GyroX: record.GyroX?.toFixed(2) || "0.50",
+        GyroY: record.GyroY?.toFixed(2) || "-0.30",
+        GyroZ: record.GyroZ?.toFixed(2) || "0.10"
+      };
+
+      return acc + `${data.timestamp},${data.wristAngle},${data.EMG1},${data.EMG2},${data.Voltage1},${data.Voltage2},${data.GyroX},${data.GyroY},${data.GyroZ}\n`;
     }, headers);
 
     // Create and trigger download

@@ -2,7 +2,15 @@ import React, { useState, useEffect } from 'react';
 import io from 'socket.io-client';
 
 function SensorData() {
-  const [sensorData, setSensorData] = useState({ EMG: 0, Voltage: 0 });
+  const [sensorData, setSensorData] = useState({
+    EMG1: 500,  // Default EMG values (typical range 0-1023)
+    EMG2: 600,
+    Voltage1: 3.3,  // Default voltage values (typical range 0-5V)
+    Voltage2: 3.5,
+    GyroX: 0.5,  // Default gyro values (typical range ±250 deg/s)
+    GyroY: -0.3,
+    GyroZ: 0.1
+  });
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {

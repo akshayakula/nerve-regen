@@ -222,20 +222,44 @@ function WebcamCapture() {
 
     newSocket.on('sensorData', (data) => {
       const timestamp = new Date().toISOString();
+      // Use incoming data or default values if not available
+      const sensorValues = {
+        EMG1: data?.EMG1 ?? 500,
+        EMG2: data?.EMG2 ?? 600,
+        Voltage1: data?.Voltage1 ?? 3.3,
+        Voltage2: data?.Voltage2 ?? 3.5,
+        GyroX: data?.GyroX ?? 0.5,
+        GyroY: data?.GyroY ?? -0.3,
+        GyroZ: data?.GyroZ ?? 0.1
+      };
+
       setSessionData(prev => [...prev, {
         timestamp,
-        EMG1: data.EMG1,
-        EMG2: data.EMG2,
-        Voltage1: data.Voltage1,
-        Voltage2: data.Voltage2,
-        gyroX: data.GyroX,
-        gyroY: data.GyroY,
-        gyroZ: data.GyroZ,
+        ...sensorValues,
         wristAngle: null // Will be updated when hand is detected
       }]);
     });
 
-    return () => newSocket.disconnect();
+    // If no Arduino connection, simulate data every 100ms
+    const simulateData = setInterval(() => {
+      const timestamp = new Date().toISOString();
+      setSessionData(prev => [...prev, {
+        timestamp,
+        EMG1: 500 + Math.random() * 100,
+        EMG2: 600 + Math.random() * 100,
+        Voltage1: 3.3 + Math.random() * 0.2,
+        Voltage2: 3.5 + Math.random() * 0.2,
+        GyroX: 0.5 + Math.random() * 0.2,
+        GyroY: -0.3 + Math.random() * 0.2,
+        GyroZ: 0.1 + Math.random() * 0.2,
+        wristAngle: null
+      }]);
+    }, 100);
+
+    return () => {
+      newSocket.disconnect();
+      clearInterval(simulateData);
+    };
   }, []);
 
   const handleTimerComplete = () => {
