@@ -325,26 +325,53 @@ function WebcamCapture() {
     
     // Only process when we have enough data for smoothing
     if (sensorBuffer.length >= BUFFER_SIZE) {
-      // Apply exponential smoothing to gyroscope data
-      const gyroSmoothed = exponentialMovingAverage(sensorBuffer, SMOOTHING_ALPHA, 'GyroX');
-      gyroSmoothed.forEach(item => {
-        item.GyroY = exponentialMovingAverage(sensorBuffer, SMOOTHING_ALPHA, 'GyroY')[sensorBuffer.indexOf(item)].GyroY;
-        item.GyroZ = exponentialMovingAverage(sensorBuffer, SMOOTHING_ALPHA, 'GyroZ')[sensorBuffer.indexOf(item)].GyroZ;
-      });
-      
-      // Apply low-pass filter to orientation data
-      const orientationSmoothed = lowPassFilter(gyroSmoothed, 0.1, 'Roll');
-      orientationSmoothed.forEach(item => {
-        item.Pitch = lowPassFilter(gyroSmoothed, 0.1, 'Pitch')[gyroSmoothed.indexOf(item)].Pitch;
-        item.Yaw = lowPassFilter(gyroSmoothed, 0.1, 'Yaw')[gyroSmoothed.indexOf(item)].Yaw;
-      });
-      
-      // Get the latest smoothed data point
-      const latestSmoothed = orientationSmoothed[orientationSmoothed.length - 1];
-      
-      // Add to session data
-      setSessionData(prev => [...prev, latestSmoothed]);
-      setSmoothedData(orientationSmoothed);
+      try {
+        // Create a deep copy of the buffer to avoid mutation issues
+        const bufferCopy = JSON.parse(JSON.stringify(sensorBuffer));
+        
+        // Apply smoothing to each property individually
+        const smoothedData = { ...bufferCopy[bufferCopy.length - 1] };
+        
+        // Apply exponential smoothing to gyroscope data
+        smoothedData.GyroX = exponentialMovingAverage(
+          bufferCopy.map(item => item.GyroX || 0), 
+          SMOOTHING_ALPHA
+        )[bufferCopy.length - 1];
+        
+        smoothedData.GyroY = exponentialMovingAverage(
+          bufferCopy.map(item => item.GyroY || 0), 
+          SMOOTHING_ALPHA
+        )[bufferCopy.length - 1];
+        
+        smoothedData.GyroZ = exponentialMovingAverage(
+          bufferCopy.map(item => item.GyroZ || 0), 
+          SMOOTHING_ALPHA
+        )[bufferCopy.length - 1];
+        
+        // Apply low-pass filter to orientation data
+        smoothedData.Roll = lowPassFilter(
+          bufferCopy.map(item => item.Roll || 0), 
+          0.1
+        )[bufferCopy.length - 1];
+        
+        smoothedData.Pitch = lowPassFilter(
+          bufferCopy.map(item => item.Pitch || 0), 
+          0.1
+        )[bufferCopy.length - 1];
+        
+        smoothedData.Yaw = lowPassFilter(
+          bufferCopy.map(item => item.Yaw || 0), 
+          0.1
+        )[bufferCopy.length - 1];
+        
+        // Add to session data
+        setSessionData(prev => [...prev, smoothedData]);
+        setSmoothedData(prev => [...prev, smoothedData]);
+      } catch (err) {
+        console.error('Error in smoothing data:', err);
+        // Fallback to using the raw data
+        setSessionData(prev => [...prev, sensorBuffer[sensorBuffer.length - 1]]);
+      }
     } else {
       // If not enough data for smoothing, just use the raw data
       setSessionData(prev => [...prev, sensorBuffer[sensorBuffer.length - 1]]);

@@ -63,19 +63,33 @@ export const movingAverage = (data, windowSize = 5, property = null) => {
  * @returns {Array} - Smoothed data
  */
 export const exponentialMovingAverage = (data, alpha = 0.2, property = null) => {
-  if (!data || data.length === 0) return [];
+  if (!data || data.length === 0) return [0];
+  if (!Array.isArray(data)) return [0];
   
   const result = [];
   
   // If we're smoothing a property in objects
   if (property) {
+    if (!data[0] || typeof data[0] !== 'object') return [{ [property]: 0 }];
+    
     // First point remains the same
     result.push({...data[0]});
     
     // Apply EMA for the rest
     for (let i = 1; i < data.length; i++) {
+      if (!data[i] || !data[i-1] || result[i-1] === undefined) {
+        result.push({...data[i-1] || data[0] || {}});
+        continue;
+      }
+      
       const prevSmoothed = result[i-1][property];
       const current = data[i][property];
+      
+      if (prevSmoothed === undefined || current === undefined) {
+        result.push({...data[i]});
+        continue;
+      }
+      
       const smoothedValue = alpha * current + (1 - alpha) * prevSmoothed;
       
       const newPoint = {...data[i]};
@@ -86,10 +100,15 @@ export const exponentialMovingAverage = (data, alpha = 0.2, property = null) => 
   // If we're smoothing an array of values
   else {
     // First point remains the same
-    result.push(data[0]);
+    result.push(data[0] || 0);
     
     // Apply EMA for the rest
     for (let i = 1; i < data.length; i++) {
+      if (data[i] === undefined || result[i-1] === undefined) {
+        result.push(result[i-1] || data[0] || 0);
+        continue;
+      }
+      
       const prevSmoothed = result[i-1];
       const current = data[i];
       result.push(alpha * current + (1 - alpha) * prevSmoothed);
@@ -107,7 +126,8 @@ export const exponentialMovingAverage = (data, alpha = 0.2, property = null) => 
  * @returns {Array} - Smoothed data
  */
 export const lowPassFilter = (data, cutoff = 0.1, property = null) => {
-  if (!data || data.length === 0) return [];
+  if (!data || data.length === 0) return [0];
+  if (!Array.isArray(data)) return [0];
   
   const result = [];
   const RC = 1.0 / (2.0 * Math.PI * cutoff);
@@ -116,13 +136,26 @@ export const lowPassFilter = (data, cutoff = 0.1, property = null) => {
   
   // If we're smoothing a property in objects
   if (property) {
+    if (!data[0] || typeof data[0] !== 'object') return [{ [property]: 0 }];
+    
     // First point remains the same
     result.push({...data[0]});
     
     // Apply filter for the rest
     for (let i = 1; i < data.length; i++) {
+      if (!data[i] || !data[i-1] || result[i-1] === undefined) {
+        result.push({...data[i-1] || data[0] || {}});
+        continue;
+      }
+      
       const prevFiltered = result[i-1][property];
       const current = data[i][property];
+      
+      if (prevFiltered === undefined || current === undefined) {
+        result.push({...data[i]});
+        continue;
+      }
+      
       const filteredValue = prevFiltered + alpha * (current - prevFiltered);
       
       const newPoint = {...data[i]};
@@ -133,10 +166,15 @@ export const lowPassFilter = (data, cutoff = 0.1, property = null) => {
   // If we're smoothing an array of values
   else {
     // First point remains the same
-    result.push(data[0]);
+    result.push(data[0] || 0);
     
     // Apply filter for the rest
     for (let i = 1; i < data.length; i++) {
+      if (data[i] === undefined || result[i-1] === undefined) {
+        result.push(result[i-1] || data[0] || 0);
+        continue;
+      }
+      
       const prevFiltered = result[i-1];
       const current = data[i];
       result.push(prevFiltered + alpha * (current - prevFiltered));
