@@ -60,7 +60,7 @@ function ComparisonView({ currentData, onBack }) {
         }
         
         // Check if the CSV has the required columns
-        const requiredColumns = ['timestamp', 'wristAngle', 'EMG1', 'EMG2', 'Gyro X', 'Gyro Y', 'Gyro Z'];
+        const requiredColumns = ['Timestamp', 'Wrist Angle', 'EMG1', 'EMG2', 'Gyro X', 'Gyro Y', 'Gyro Z'];
         const missingColumns = requiredColumns.filter(col => !headers.includes(col));
         
         if (missingColumns.length > 0) {
@@ -69,8 +69,8 @@ function ComparisonView({ currentData, onBack }) {
 
         // Map column names to match our expected format
         const processedData = data.map(item => ({
-          timestamp: item.timestamp,
-          wristAngle: item.wristAngle || 0,
+          timestamp: item.Timestamp,
+          wristAngle: item['Wrist Angle'] || 0,
           EMG1: item.EMG1 || 0,
           EMG2: item.EMG2 || 0,
           GyroX: item['Gyro X'] || 0,
