@@ -271,6 +271,9 @@ function WebcamCapture() {
     <div className="relative bg-[#2a2a2a] rounded-xl p-6 shadow-xl transition-all duration-500">
       {showWebcam ? (
         <>
+          <h1 className="absolute top-4 left-4 text-2xl font-bold text-white font-poppins">
+            Regen
+          </h1>
           <video
             ref={videoRef}
             className="hidden"
