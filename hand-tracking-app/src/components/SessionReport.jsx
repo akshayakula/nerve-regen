@@ -80,13 +80,14 @@ function SessionReport({ sessionData }) {
             <div className="h-64">
               <Line
                 data={{
-                  labels: sessionData.map((_, i) => i),
+                  labels: sessionData.map(d => new Date(d.timestamp).toLocaleTimeString()),
                   datasets: [
                     {
                       label: 'Wrist Angle',
                       data: sessionData.map(d => d.wristAngle),
                       borderColor: '#4F4099',
-                      tension: 0.4
+                      tension: 0.4,
+                      pointRadius: 0
                     },
                     {
                       label: 'Movement Intensity',
@@ -94,16 +95,35 @@ function SessionReport({ sessionData }) {
                         Math.sqrt(d.GyroX**2 + d.GyroY**2 + d.GyroZ**2)
                       ),
                       borderColor: '#9F4099',
-                      tension: 0.4
+                      tension: 0.4,
+                      pointRadius: 0
                     }
                   ]
                 }}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
+                  animation: false,
                   scales: {
-                    y: { grid: { color: '#333' } },
-                    x: { grid: { color: '#333' } }
+                    y: { 
+                      grid: { color: '#333' },
+                      beginAtZero: true
+                    },
+                    x: { 
+                      grid: { color: '#333' },
+                      ticks: {
+                        maxTicksLimit: 10,
+                        maxRotation: 45,
+                        minRotation: 45
+                      }
+                    }
+                  },
+                  plugins: {
+                    legend: {
+                      labels: {
+                        color: '#fff'
+                      }
+                    }
                   }
                 }}
               />
@@ -163,28 +183,48 @@ function SessionReport({ sessionData }) {
             <div className="h-64 mb-4">
               <Line
                 data={{
-                  labels: sessionData.map((_, i) => i),
+                  labels: sessionData.map(d => new Date(d.timestamp).toLocaleTimeString()),
                   datasets: [
                     {
                       label: 'EMG 1',
                       data: sessionData.map(d => d.EMG1),
                       borderColor: '#4F4099',
-                      tension: 0.4
+                      tension: 0.4,
+                      pointRadius: 0
                     },
                     {
                       label: 'EMG 2',
                       data: sessionData.map(d => d.EMG2),
                       borderColor: '#9F4099',
-                      tension: 0.4
+                      tension: 0.4,
+                      pointRadius: 0
                     }
                   ]
                 }}
                 options={{
                   responsive: true,
                   maintainAspectRatio: false,
+                  animation: false,
                   scales: {
-                    y: { grid: { color: '#333' } },
-                    x: { grid: { color: '#333' } }
+                    y: { 
+                      grid: { color: '#333' },
+                      beginAtZero: true
+                    },
+                    x: { 
+                      grid: { color: '#333' },
+                      ticks: {
+                        maxTicksLimit: 10,
+                        maxRotation: 45,
+                        minRotation: 45
+                      }
+                    }
+                  },
+                  plugins: {
+                    legend: {
+                      labels: {
+                        color: '#fff'
+                      }
+                    }
                   }
                 }}
               />
