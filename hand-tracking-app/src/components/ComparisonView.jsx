@@ -1,8 +1,8 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { Button } from './ui/button';
-import { Line } from 'react-chartjs-2';
+import { Line, Bar } from 'react-chartjs-2';
 import { Chart, registerables } from 'chart.js';
-import { analyzeTremors, analyzeMovementSmoothness, analyzeRangeOfMotion } from '../utils/movementAnalysis';
+import { analyzeTremors, analyzeMovementSmoothness, analyzeRangeOfMotion, analyzeEMGActivity, analyzeMotionPatterns } from '../utils/movementAnalysis';
 
 Chart.register(...registerables);
 
@@ -19,6 +19,8 @@ function ComparisonView({ currentData, onBack }) {
         tremors: analyzeTremors(currentData),
         smoothness: analyzeMovementSmoothness(currentData),
         rangeOfMotion: analyzeRangeOfMotion(currentData),
+        emgActivity: analyzeEMGActivity(currentData),
+        motionPatterns: analyzeMotionPatterns(currentData),
       };
       setCurrentAnalysis(analysis);
     }
@@ -88,6 +90,8 @@ function ComparisonView({ currentData, onBack }) {
           tremors: analyzeTremors(processedData),
           smoothness: analyzeMovementSmoothness(processedData),
           rangeOfMotion: analyzeRangeOfMotion(processedData),
+          emgActivity: analyzeEMGActivity(processedData),
+          motionPatterns: analyzeMotionPatterns(processedData),
         };
         setPreviousAnalysis(analysis);
       } catch (error) {
@@ -276,8 +280,52 @@ function ComparisonView({ currentData, onBack }) {
 
         {/* EMG Analysis Comparison */}
         <div className="bg-[#2a2a2a] rounded-xl p-6 shadow-xl">
-          <h3 className="text-2xl font-bold text-white mb-4">Muscle Activity Comparison</h3>
-          <div className="h-64 mb-4">
+          <h3 className="text-2xl font-bold text-white mb-4">Muscle Activity Analysis</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div className="p-4 bg-[#1a1a1a] rounded-lg">
+              <p className="text-sm text-gray-400">Average EMG Amplitude</p>
+              <div className="flex flex-col space-y-2">
+                <div>
+                  <p className="text-sm text-purple-300">Current</p>
+                  <p className="text-xl text-white">{currentAnalysis.emgActivity.averageAmplitude.toFixed(2)} mV</p>
+                </div>
+                <div>
+                  <p className="text-sm text-purple-300">Previous</p>
+                  <p className="text-xl text-white">{previousAnalysis.emgActivity.averageAmplitude.toFixed(2)} mV</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-[#1a1a1a] rounded-lg">
+              <p className="text-sm text-gray-400">Muscle Fatigue Index</p>
+              <div className="flex flex-col space-y-2">
+                <div>
+                  <p className="text-sm text-purple-300">Current</p>
+                  <p className="text-xl text-white">{currentAnalysis.emgActivity.fatigueIndex.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-purple-300">Previous</p>
+                  <p className="text-xl text-white">{previousAnalysis.emgActivity.fatigueIndex.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-[#1a1a1a] rounded-lg">
+              <p className="text-sm text-gray-400">Activation Pattern Score</p>
+              <div className="flex flex-col space-y-2">
+                <div>
+                  <p className="text-sm text-purple-300">Current</p>
+                  <p className="text-xl text-white">{currentAnalysis.emgActivity.activationScore.toFixed(2)}/10</p>
+                </div>
+                <div>
+                  <p className="text-sm text-purple-300">Previous</p>
+                  <p className="text-xl text-white">{previousAnalysis.emgActivity.activationScore.toFixed(2)}/10</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="h-64">
             <Line
               data={{
                 datasets: [
@@ -334,30 +382,154 @@ function ComparisonView({ currentData, onBack }) {
           </div>
         </div>
 
+        {/* Motion Pattern Analysis */}
+        <div className="bg-[#2a2a2a] rounded-xl p-6 shadow-xl">
+          <h3 className="text-2xl font-bold text-white mb-4">Motion Pattern Analysis</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div className="p-4 bg-[#1a1a1a] rounded-lg">
+              <p className="text-sm text-gray-400">Movement Efficiency</p>
+              <div className="flex flex-col space-y-2">
+                <div>
+                  <p className="text-sm text-purple-300">Current</p>
+                  <p className="text-xl text-white">{currentAnalysis.motionPatterns.efficiency.toFixed(2)}%</p>
+                </div>
+                <div>
+                  <p className="text-sm text-purple-300">Previous</p>
+                  <p className="text-xl text-white">{previousAnalysis.motionPatterns.efficiency.toFixed(2)}%</p>
+                </div>
+                <div className="text-sm">
+                  <p className={`${currentAnalysis.motionPatterns.efficiency > previousAnalysis.motionPatterns.efficiency ? 'text-green-400' : 'text-red-400'}`}>
+                    Change: {((currentAnalysis.motionPatterns.efficiency - previousAnalysis.motionPatterns.efficiency) / previousAnalysis.motionPatterns.efficiency * 100).toFixed(1)}%
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-4 bg-[#1a1a1a] rounded-lg">
+              <p className="text-sm text-gray-400">Movement Complexity</p>
+              <div className="flex flex-col space-y-2">
+                <div>
+                  <p className="text-sm text-purple-300">Current</p>
+                  <p className="text-xl text-white">{currentAnalysis.motionPatterns.complexity.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-sm text-purple-300">Previous</p>
+                  <p className="text-xl text-white">{previousAnalysis.motionPatterns.complexity.toFixed(2)}</p>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <div className="h-64">
+            <Bar
+              data={{
+                labels: ['Speed', 'Accuracy', 'Control', 'Coordination'],
+                datasets: [
+                  {
+                    label: 'Current Session',
+                    data: [
+                      currentAnalysis.motionPatterns.speed,
+                      currentAnalysis.motionPatterns.accuracy,
+                      currentAnalysis.motionPatterns.control,
+                      currentAnalysis.motionPatterns.coordination
+                    ],
+                    backgroundColor: '#4F4099'
+                  },
+                  {
+                    label: 'Previous Session',
+                    data: [
+                      previousAnalysis.motionPatterns.speed,
+                      previousAnalysis.motionPatterns.accuracy,
+                      previousAnalysis.motionPatterns.control,
+                      previousAnalysis.motionPatterns.coordination
+                    ],
+                    backgroundColor: '#9F4099'
+                  }
+                ]
+              }}
+              options={{
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                  y: {
+                    beginAtZero: true,
+                    grid: { color: '#333' },
+                    ticks: { color: '#fff' }
+                  },
+                  x: {
+                    grid: { color: '#333' },
+                    ticks: { color: '#fff' }
+                  }
+                },
+                plugins: {
+                  legend: {
+                    labels: { color: '#fff' }
+                  }
+                }
+              }}
+            />
+          </div>
+        </div>
+
         {/* Progress Summary */}
         <div className="bg-[#2a2a2a] rounded-xl p-6 shadow-xl">
-          <h3 className="text-2xl font-bold text-white mb-4">Progress Summary</h3>
-          <div className="p-4 bg-[#1a1a1a] rounded-lg">
-            <p className="text-white mb-4">
-              {currentAnalysis.smoothness.movementQuality > previousAnalysis.smoothness.movementQuality ? 
-                "Your movement quality has improved since the previous session. Keep up the good work!" :
-                "Your movement quality has slightly decreased since the previous session. This could be due to fatigue or other factors."
-              }
-            </p>
-            <p className="text-white mb-4">
-              {currentAnalysis.tremors.intensity < previousAnalysis.tremors.intensity ? 
-                "Tremor intensity has decreased, which is a positive sign of improvement." :
-                "Tremor intensity has increased slightly. Consider discussing this with your healthcare provider."
-              }
-            </p>
-            <p className="text-white">
-              Range of motion in {
-                Object.entries(currentAnalysis.rangeOfMotion)
-                  .filter(([key, value]) => value.range > previousAnalysis.rangeOfMotion[key].range)
-                  .map(([key]) => key)
-                  .join(', ')
-              } has improved since your last session.
-            </p>
+          <h3 className="text-2xl font-bold text-white mb-4">Detailed Progress Summary</h3>
+          <div className="space-y-4">
+            <div className="p-4 bg-[#1a1a1a] rounded-lg">
+              <h4 className="text-lg font-semibold text-purple-300 mb-2">Movement Quality</h4>
+              <p className="text-white mb-2">
+                {currentAnalysis.smoothness.movementQuality > previousAnalysis.smoothness.movementQuality ? 
+                  `Movement quality has improved by ${((currentAnalysis.smoothness.movementQuality - previousAnalysis.smoothness.movementQuality) / previousAnalysis.smoothness.movementQuality * 100).toFixed(1)}%. This indicates better control and coordination.` :
+                  `Movement quality has decreased by ${((previousAnalysis.smoothness.movementQuality - currentAnalysis.smoothness.movementQuality) / previousAnalysis.smoothness.movementQuality * 100).toFixed(1)}%. This might be due to fatigue or other factors.`
+                }
+              </p>
+            </div>
+
+            <div className="p-4 bg-[#1a1a1a] rounded-lg">
+              <h4 className="text-lg font-semibold text-purple-300 mb-2">Muscle Activity</h4>
+              <p className="text-white mb-2">
+                EMG analysis shows {
+                  currentAnalysis.emgActivity.averageAmplitude > previousAnalysis.emgActivity.averageAmplitude ?
+                  'increased muscle activation' : 'decreased muscle activation'
+                }, with a fatigue index of {currentAnalysis.emgActivity.fatigueIndex.toFixed(2)}.
+              </p>
+            </div>
+
+            <div className="p-4 bg-[#1a1a1a] rounded-lg">
+              <h4 className="text-lg font-semibold text-purple-300 mb-2">Motion Patterns</h4>
+              <p className="text-white mb-2">
+                Movement efficiency is {
+                  currentAnalysis.motionPatterns.efficiency > previousAnalysis.motionPatterns.efficiency ?
+                  'improving' : 'showing room for improvement'
+                }, with notable changes in {
+                  Object.entries(currentAnalysis.motionPatterns)
+                    .filter(([key, value]) => 
+                      key !== 'efficiency' && 
+                      Math.abs((value - previousAnalysis.motionPatterns[key]) / previousAnalysis.motionPatterns[key]) > 0.1
+                    )
+                    .map(([key]) => key)
+                    .join(', ')
+                }.
+              </p>
+            </div>
+
+            <div className="p-4 bg-[#1a1a1a] rounded-lg">
+              <h4 className="text-lg font-semibold text-purple-300 mb-2">Recommendations</h4>
+              <ul className="list-disc list-inside text-white space-y-2">
+                {currentAnalysis.tremors.intensity > previousAnalysis.tremors.intensity && (
+                  <li>Focus on stability exercises to reduce tremor intensity</li>
+                )}
+                {currentAnalysis.smoothness.smoothnessIndex < previousAnalysis.smoothness.smoothnessIndex && (
+                  <li>Practice slow, controlled movements to improve smoothness</li>
+                )}
+                {currentAnalysis.emgActivity.fatigueIndex > previousAnalysis.emgActivity.fatigueIndex && (
+                  <li>Consider shorter exercise sessions or more rest between movements</li>
+                )}
+                {currentAnalysis.motionPatterns.accuracy < previousAnalysis.motionPatterns.accuracy && (
+                  <li>Work on precision exercises to improve movement accuracy</li>
+                )}
+              </ul>
+            </div>
           </div>
         </div>
       </div>
