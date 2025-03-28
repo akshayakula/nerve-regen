@@ -34,7 +34,13 @@ function SensorData({ sensorBuffer, smoothedData }) {
   // Format values for display
   const formatValue = (value) => {
     if (value === null || value === undefined) return 'N/A';
-    if (typeof value === 'number') return value.toFixed(2);
+    if (typeof value === 'number') {
+      // Check if this is an angle measurement (Roll, Pitch, Yaw, wristAngle)
+      if (['Roll', 'Pitch', 'Yaw', 'wristAngle'].some(key => latestData && latestData[key] === value)) {
+        return Math.round(value); // Round to integer for angles
+      }
+      return value.toFixed(2); // Keep decimals for other values
+    }
     return value;
   };
   
@@ -115,15 +121,15 @@ function SensorData({ sensorBuffer, smoothedData }) {
           <div className="grid grid-cols-3 gap-2">
             <div className="bg-[#333] p-2 rounded">
               <div className="text-xs text-gray-400">Roll</div>
-              <div className="text-lg text-white">{formatValue(latestData.Roll)}°</div>
+              <div className="text-lg text-white">{Math.round(latestData.Roll)}°</div>
             </div>
             <div className="bg-[#333] p-2 rounded">
               <div className="text-xs text-gray-400">Pitch</div>
-              <div className="text-lg text-white">{formatValue(latestData.Pitch)}°</div>
+              <div className="text-lg text-white">{Math.round(latestData.Pitch)}°</div>
             </div>
             <div className="bg-[#333] p-2 rounded">
               <div className="text-xs text-gray-400">Yaw</div>
-              <div className="text-lg text-white">{formatValue(latestData.Yaw)}°</div>
+              <div className="text-lg text-white">{Math.round(latestData.Yaw)}°</div>
             </div>
           </div>
         </div>
@@ -135,7 +141,7 @@ function SensorData({ sensorBuffer, smoothedData }) {
         <div className="grid grid-cols-1 gap-2">
           <div className="bg-[#333] p-2 rounded">
             <div className="text-xs text-gray-400">Wrist Angle</div>
-            <div className="text-lg text-white">{formatValue(latestData.wristAngle)}°</div>
+            <div className="text-lg text-white">{latestData.wristAngle ? Math.round(latestData.wristAngle) : 'N/A'}°</div>
           </div>
         </div>
       </div>

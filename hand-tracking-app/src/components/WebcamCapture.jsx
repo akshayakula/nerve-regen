@@ -575,41 +575,6 @@ function WebcamCapture({ initialPort }) {
 
   return (
     <div className="relative bg-[#2a2a2a] rounded-xl p-6 shadow-xl transition-all duration-500 max-w-full overflow-x-hidden">
-      {dataReceived && (
-        <div className="absolute top-12 right-2 z-50 bg-green-500 text-white px-2 py-1 rounded text-xs animate-pulse">
-          Data flowing: {dataCount} points
-        </div>
-      )}
-      <div className="absolute top-2 right-2 z-50">
-        <button 
-          className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
-          onClick={() => {
-            if (isPolling) {
-              stopPolling();
-            } else {
-              startPolling();
-            }
-          }}
-        >
-          {isPolling ? 'Stop Polling' : 'Start Polling'}
-        </button>
-        <button 
-          className={`${isFetching ? 'bg-yellow-500' : 'bg-green-500'} text-white px-2 py-1 rounded text-xs ml-2`}
-          onClick={() => {
-            // Add a visual indicator that the button was clicked
-            const btn = document.activeElement;
-            if (btn) {
-              btn.style.backgroundColor = '#ff0000';
-              setTimeout(() => { btn.style.backgroundColor = isFetching ? '#eab308' : '#22c55e'; }, 500);
-            }
-            
-            fetchSensorData();
-          }}
-          disabled={isFetching}
-        >
-          {isFetching ? 'Fetching...' : 'Fetch Now'}
-        </button>
-      </div>
       {error && (
         <div className="absolute top-0 left-0 right-0 bg-red-500 text-white p-2 text-center z-50">
           {error}
@@ -626,8 +591,18 @@ function WebcamCapture({ initialPort }) {
         </div>
       )}
       <div className="absolute top-2 left-2 flex items-center text-xs text-gray-400 z-40">
-        <div className={`w-2 h-2 rounded-full mr-1 ${connectionStatus === 'connected' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-        {connectionStatus === 'connected' ? 'Connected' : 'Disconnected'} (Port: 5001)
+        <div className={`w-2 h-2 rounded-full mr-1 ${
+          connectionStatus === 'connected' 
+            ? isFetching 
+              ? 'bg-yellow-500 animate-pulse' 
+              : 'bg-green-500' 
+            : 'bg-red-500'
+        }`}></div>
+        {connectionStatus === 'connected' 
+          ? isFetching 
+            ? 'Fetching data...' 
+            : 'Connected' 
+          : 'Disconnected'} (Port: 5001)
         {connectionStatus === 'connected' && (
           <>
             <span className="mx-2">|</span>

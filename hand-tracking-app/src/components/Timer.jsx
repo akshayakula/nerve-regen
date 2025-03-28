@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 function Timer({ onComplete }) {
-  const [timeLeft, setTimeLeft] = useState(10);
+  const [timeLeft, setTimeLeft] = useState(30);
   const radius = 40;
   const circumference = 2 * Math.PI * radius;
 
@@ -20,7 +20,7 @@ function Timer({ onComplete }) {
     return () => clearInterval(interval);
   }, [onComplete]);
 
-  const strokeDashoffset = circumference * (1 - timeLeft / 10);
+  const strokeDashoffset = circumference * (1 - timeLeft / 30);
 
   return (
     <div className="absolute top-8 right-4 flex items-center justify-center">
